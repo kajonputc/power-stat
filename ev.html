@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EV Charging Report</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:'Sarabun','TH Sarabun New',sans-serif;font-size:11pt;background:#f0f2f5;margin:0;padding:0}
+  #main{padding:18px 20px}
+  h1{font-size:15pt;border-bottom:2px solid #333;padding-bottom:6px;margin-top:0}
+  h2{font-size:12pt;border-bottom:1px solid #aaa;padding-bottom:3px;margin-top:24px;color:#444}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:12px 0}
+  .card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:12px 16px}
+  .card .val{font-size:18pt;font-weight:bold;color:#2c3e50}
+  .card .lbl{font-size:9pt;color:#888;margin-top:3px}
+  .c1{border-left:4px solid #8e44ad}.c2{border-left:4px solid #2980b9}
+  .c3{border-left:4px solid #e74c3c}.c4{border-left:4px solid #27ae60}
+  .chart{background:#fff;border:1px solid #eee;border-radius:6px;margin:8px 0;padding:6px}
+  table{border-collapse:collapse;width:100%;font-size:10pt;margin:8px 0}
+  th,td{border:1px solid #ddd;padding:5px 10px;text-align:right}
+  th{background:#f5f5f5;text-align:center}
+  tr:nth-child(even){background:#f9f9f9}
+  .total{font-weight:bold;background:#f0f0f0}
+  .note{font-size:9pt;color:#999;margin:4px 0}
+  .nav-bar{background:#2c3e50;color:#fff;padding:10px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .nav-bar a{color:#bdc3c7;text-decoration:none;font-size:10pt}
+  .nav-bar a.active,.nav-bar a:hover{color:#f39c12}
+  .nav-bar select{padding:4px 8px;border-radius:4px;border:none;font-size:10pt;cursor:pointer}
+  .nav-logo{color:#f39c12!important;font-weight:bold;font-size:13pt!important}
+</style>
+</head>
+<body>
+<div id="nav" class="nav-bar"></div>
+<div id="main">
+  <div id="loading" style="color:#888;padding:30px;text-align:center;font-size:12pt">กำลังโหลดข้อมูล...</div>
+  <div id="content" style="display:none"></div>
+</div>
+
+<script>
+let globalIdx = {months:[],daily:[],ev:[]};
+let currentMonth = new URLSearchParams(location.search).get('month');
+
+function buildNav(month) {
+  const opts = (globalIdx.ev||[]).map(m=>
+    `<option value="${m}"${m===month?' selected':''}>${m}</option>`).join('');
+  const latestDate = (globalIdx.daily||[])[0]||'';
+  document.getElementById('nav').innerHTML=`
+    <a href="index.html" class="nav-logo">⚡ Power Stats</a>
+    <select onchange="loadMonth(this.value);history.pushState({},'','ev.html?month='+this.value)">${opts}</select>
+    <a href="index.html">🏠 หน้าหลัก</a>
+    <a href="monthly.html?month=${month}">📋 Monthly</a>
+    <a href="daily.html?date=${latestDate}">📅 Daily</a>
+    <a href="ev.html?month=${month}" class="active">🔌 EV</a>`;
+}
+
+fetch('index.json')
+  .then(r=>r.json()).then(idx=>{
+    globalIdx=idx;
+    if(!currentMonth) currentMonth=(idx.ev||[])[0]||(idx.months||[])[0];
+    buildNav(currentMonth||'');
+    if(currentMonth) loadMonth(currentMonth);
+    else document.getElementById('loading').textContent='ไม่พบข้อมูล EV';
+  })
+  .catch(()=>{ buildNav(currentMonth||''); if(currentMonth) loadMonth(currentMonth); });
+
+function loadMonth(m) {
+  currentMonth=m;
+  document.getElementById('loading').style.display='block';
+  document.getElementById('content').style.display='none';
+  fetch(`data/ev_${m}.json`)
+    .then(r=>{ if(!r.ok) throw new Error(); return r.json(); })
+    .then(data=>renderEV(data))
+    .catch(()=>{ document.getElementById('loading').textContent=`ไม่พบข้อมูล EV เดือน ${m}`; });
+}
+
+function renderEV(d) {
+  const ps = new Date(d.period_start).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
+  const pe = new Date(d.period_end).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
+
+  // Session table rows
+  let rows='';
+  d.sessions.forEach((s,i)=>{
+    const start = new Date(s.start);
+    const end   = new Date(s.end);
+    const dateStr  = start.toLocaleDateString('th-TH',{year:'numeric',month:'2-digit',day:'2-digit'});
+    const startStr = start.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    const endStr   = end.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    rows+=`<tr><td>${i+1}</td><td>${dateStr}</td>
+      <td>${startStr}</td><td>${endStr}</td>
+      <td>${s.duration_min.toFixed(0)} min (${(s.duration_min/60).toFixed(1)}h)</td>
+      <td>${s.avg_kw.toFixed(2)} kW</td>
+      <td><strong>${s.kwh.toFixed(2)}</strong></td>
+      <td><strong>${s.cost.toFixed(2)}</strong></td></tr>`;
+  });
+  rows+=`<tr class="total"><td colspan="6">รวม</td>
+    <td>${d.total_kwh.toFixed(2)}</td>
+    <td>${d.total_cost.toFixed(2)}</td></tr>`;
+
+  const xcheck = d.energy_b_total>0
+    ? `<p class="note">* Cross-check: energy_b sensor ${d.energy_b_total.toFixed(2)} kWh ในช่วงนี้</p>`
+    : '';
+
+  const sess_labels = d.sessions.map((s,i)=>{
+    const dt = new Date(s.start);
+    return `#${i+1} ${dt.getMonth()+1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+  });
+
+  document.getElementById('content').innerHTML=`
+    <h1>รายงานการชาร์จ EV — รอบบิล ${ps} – ${pe}</h1>
+    <p style="color:#666;font-size:10pt">Phase B · Off-Peak 3.00 บาท/หน่วย (EV ชาร์จ 22:00–06:00)</p>
+    <div class="grid4">
+      <div class="card c1"><div class="val">${d.n_sessions} ครั้ง</div>
+        <div class="lbl">จำนวนครั้งที่ชาร์จ</div></div>
+      <div class="card c2"><div class="val">${d.total_kwh.toFixed(1)} หน่วย</div>
+        <div class="lbl">รวม kWh · ใช้เวลา ${d.total_hours.toFixed(1)}h</div></div>
+      <div class="card c3"><div class="val">${d.total_cost.toFixed(0)} ฿</div>
+        <div class="lbl">ค่าไฟ EV รอบนี้</div></div>
+      <div class="card c4"><div class="val">${d.avg_kwh.toFixed(1)} หน่วย</div>
+        <div class="lbl">เฉลี่ย/ครั้ง · ${(d.avg_kwh*3.00).toFixed(0)} ฿/ครั้ง</div></div>
+    </div>
+    <h2>kWh ต่อวัน</h2>
+    <div class="chart" id="c1" style="height:240px"></div>
+    <h2>รายละเอียดแต่ละ Session</h2>
+    <table>
+      <tr><th>#</th><th>วันที่</th><th>เริ่ม</th><th>สิ้นสุด</th>
+          <th>ระยะเวลา</th><th>กำลัง avg</th><th>kWh</th><th>บาท</th></tr>
+      ${rows}
+    </table>
+    ${xcheck}
+    <h2>พฤติกรรมการชาร์จ</h2>
+    <div class="chart" id="c2" style="height:240px"></div>`;
+
+  document.getElementById('loading').style.display='none';
+  document.getElementById('content').style.display='block';
+
+  Plotly.newPlot('c1',[{
+    x:d.daily_dates, y:d.daily_kwh, type:'bar', name:'kWh/วัน',
+    marker:{color:'#8e44ad'},
+    text:d.daily_kwh.map(v=>v.toFixed(1)), textposition:'outside'
+  }],{title:'kWh ชาร์จ EV แต่ละวัน',
+      xaxis:{title:'วันที่'},yaxis:{title:'kWh'},
+      margin:{t:40,b:60},plot_bgcolor:'#fff'});
+
+  Plotly.newPlot('c2',[
+    {x:sess_labels, y:d.sessions.map(s=>s.avg_kw), type:'bar', name:'กำลัง avg (kW)',
+     marker:{color:'#2980b9'}, yaxis:'y2'},
+    {x:sess_labels, y:d.sessions.map(s=>s.kwh), type:'bar', name:'kWh',
+     marker:{color:'#8e44ad'}, opacity:0.7}
+  ],{title:'กำลังและพลังงานแต่ละ Session',barmode:'group',
+     xaxis:{title:'Session'},yaxis:{title:'kWh'},
+     yaxis2:{title:'kW',overlaying:'y',side:'right',showgrid:false},
+     margin:{t:40,b:80},plot_bgcolor:'#fff'});
+}
+</script>
+</body></html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Report</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:'Sarabun','TH Sarabun New',sans-serif;font-size:11pt;background:#f0f2f5;margin:0;padding:0}
+  #main{padding:18px 20px}
+  h1{font-size:15pt;border-bottom:2px solid #333;padding-bottom:6px;margin-top:0}
+  h2{font-size:12pt;border-bottom:1px solid #aaa;padding-bottom:3px;margin-top:24px;color:#444}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:12px 0}
+  .card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:12px 16px}
+  .card .val{font-size:18pt;font-weight:bold;color:#2c3e50}
+  .card .lbl{font-size:9pt;color:#888;margin-top:3px}
+  .c-peak{border-left:4px solid #e74c3c}.c-off{border-left:4px solid #3498db}
+  .c-sol{border-left:4px solid #f39c12}.c-save{border-left:4px solid #27ae60}
+  .c-ac{border-left:4px solid #9b59b6}
+  .chart{background:#fff;border:1px solid #eee;border-radius:6px;margin:8px 0;padding:6px}
+  table{border-collapse:collapse;width:100%;font-size:10pt;margin:8px 0}
+  th,td{border:1px solid #ddd;padding:4px 8px;text-align:right}
+  th{background:#f5f5f5;text-align:center}
+  .total{font-weight:bold;background:#f0f0f0}
+  .note{font-size:9pt;color:#999;margin:4px 0}
+  .nav-bar{background:#2c3e50;color:#fff;padding:10px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .nav-bar a{color:#bdc3c7;text-decoration:none;font-size:10pt}
+  .nav-bar a.active,.nav-bar a:hover{color:#f39c12}
+  .nav-bar select{padding:4px 8px;border-radius:4px;border:none;font-size:10pt;cursor:pointer}
+  .nav-logo{color:#f39c12!important;font-weight:bold;font-size:13pt!important}
+  .date-nav{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+  .date-nav a{color:#2980b9;text-decoration:none;font-size:10pt}
+  .date-nav a.disabled{color:#ccc;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="nav" class="nav-bar"></div>
+<div id="main">
+  <div id="loading" style="color:#888;padding:30px;text-align:center;font-size:12pt">กำลังโหลดข้อมูล...</div>
+  <div id="content" style="display:none"></div>
+</div>
+
+<script>
+let globalIdx = {monthly:[], daily:[], ev:[]};
+let currentDate = new URLSearchParams(location.search).get('date');
+
+function buildNav(activeDate) {
+  const month = (activeDate||'').slice(0,7) || (globalIdx.latest_monthly||'');
+  const opts = globalIdx.monthly.map(m =>
+    `<option value="${m}"${m===month?' selected':''}>${m}</option>`).join('');
+  document.getElementById('nav').innerHTML = `
+    <a href="index.html" class="nav-logo">⚡ Power Stats</a>
+    <select onchange="window.location='monthly.html?month='+this.value">${opts}</select>
+    <a href="index.html">🏠 หน้าหลัก</a>
+    <a href="monthly.html?month=${month}">📋 Monthly</a>
+    <a href="daily.html?date=${activeDate||''}" class="active">📅 Daily</a>
+    <a href="ev.html?month=${month}">🔌 EV</a>`;
+}
+
+fetch(`index.json?v=${Date.now()}`)
+  .then(r=>r.json()).then(idx=>{
+    globalIdx = idx;
+    if (!currentDate) currentDate = (idx.daily||[])[0];
+    buildNav(currentDate);
+    if (currentDate) loadDate(currentDate);
+    else document.getElementById('loading').textContent = 'ไม่พบข้อมูล';
+  })
+  .catch(()=>{ buildNav(currentDate); if(currentDate) loadDate(currentDate); });
+
+function loadDate(d) {
+  document.getElementById('loading').style.display='block';
+  document.getElementById('content').style.display='none';
+  fetch(`data/daily_${d}.json?v=${Date.now()}`)
+    .then(r=>{ if(!r.ok) throw new Error(); return r.json(); })
+    .then(data=>{ renderDaily(data); })
+    .catch(()=>{ document.getElementById('loading').textContent=`ไม่พบข้อมูลวันที่ ${d}`; });
+}
+
+function renderDaily(d) {
+  const H = d.hours.map(r=>String(r.h).padStart(2,'0')+':00');
+  const consumed  = d.hours.map(r=>r.consumed);
+  const solar     = d.hours.map(r=>r.solar);
+  const grid      = d.hours.map(r=>r.grid);
+  const spill     = d.hours.map(r=>r.spill);
+  const bat_soc   = d.hours.map(r=>r.bat_soc);
+  const cost_no   = d.hours.map(r=>r.cost_no);
+  const cost_with = d.hours.map(r=>r.cost_with);
+  const bar_color = d.hours.map(r=>r.is_peak?'#e74c3c':'#3498db');
+  const consumed_ac = d.with_ac.hours.map(r=>r.consumed);
+  const grid_ac     = d.with_ac.hours.map(r=>r.grid);
+  const extra_cost  = d.with_ac.cost_with - d.cost_with;
+  const spill_ac    = d.with_ac.hours.reduce((a,r)=>a+(r.spill||0),0);
+  const total_ac    = d.with_ac.hours.reduce((a,r)=>a+r.consumed,0);
+
+  const imputed_h = d.hours.filter(r=>r.imputed).map(r=>r.h);
+  const bad_h     = d.hours.filter(r=>!r.ok&&!r.imputed).map(r=>r.h);
+  const fmt_h     = h=>String(h).padStart(2,'0')+':xx';
+
+  let banners='';
+  if(imputed_h.length)
+    banners+=`<div style="background:#fde8e8;border:1px solid #e74c3c;border-radius:4px;padding:8px 14px;margin:8px 0;font-size:10pt">
+      🔴 sensor ขาดหาย (imputed): ${imputed_h.map(fmt_h).join(', ')}</div>`;
+  if(bad_h.length)
+    banners+=`<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:4px;padding:8px 14px;margin:8px 0;font-size:10pt">
+      ⚠️ readings น้อย: ${bad_h.map(fmt_h).join(', ')}</div>`;
+
+  const allDates = globalIdx.daily||[];
+  const idx = allDates.indexOf(d.date);
+  const prev = idx < allDates.length-1 ? allDates[idx+1] : null;
+  const next = idx > 0                 ? allDates[idx-1] : null;
+  const prevLink = prev ? `<a href="daily.html?date=${prev}">← ${prev}</a>` : `<span class="disabled">←</span>`;
+  const nextLink = next ? `<a href="daily.html?date=${next}">${next} →</a>` : `<span class="disabled">→</span>`;
+
+  const dtype_th = {weekday:'วันธรรมดา (TOU)',weekend:'เสาร์/อาทิตย์ Off-Peak ทั้งวัน',holiday:'วันหยุด Off-Peak ทั้งวัน'};
+
+  let tableRows='';
+  d.hours.forEach(r=>{
+    const isImp=r.imputed, isBad=!r.ok&&!r.imputed;
+    const bg=isImp?'#fef0f0':(r.is_peak?'#fff8f8':'#f8faff');
+    const bl=isImp?'border-left:3px solid #e74c3c;':'';
+    const tag=isImp?' 🔴':(isBad?' ⚠️':'');
+    const saving=r.cost_no-r.cost_with;
+    tableRows+=`<tr style="background:${bg}">
+      <td style="${bl}">${String(r.h).padStart(2,'0')}:00${tag}</td>
+      <td>${r.is_peak?'Peak':'Off'}</td>
+      <td>${r.consumed.toFixed(3)}</td><td>${r.solar.toFixed(3)}</td>
+      <td>${r.grid.toFixed(3)}</td><td>${r.bat_soc.toFixed(0)}%</td>
+      <td>${r.spill.toFixed(3)}</td>
+      <td>${r.cost_no.toFixed(2)}</td><td>${r.cost_with.toFixed(2)}</td>
+      <td>${(saving>=0?'+':'')+saving.toFixed(2)}</td></tr>`;
+  });
+  tableRows+=`<tr class="total"><td colspan="2">รวม</td>
+    <td>${d.consumed.toFixed(3)}</td><td>${d.solar.toFixed(3)}</td>
+    <td>${d.grid.toFixed(3)}</td><td>—</td><td>${d.spill.toFixed(3)}</td>
+    <td>${d.cost_no.toFixed(2)}</td><td>${d.cost_with.toFixed(2)}</td>
+    <td>+${d.saving.toFixed(2)}</td></tr>`;
+
+  document.getElementById('content').innerHTML=`
+    <div class="date-nav">${prevLink}
+      <h1 style="margin:0">รายงานการใช้ไฟ — ${d.date} · ${dtype_th[d.dtype]||d.dtype}</h1>
+      ${nextLink}</div>
+    ${banners}
+    <div class="grid4">
+      <div class="card c-peak"><div class="val">${d.peak_kwh.toFixed(1)} หน่วย</div>
+        <div class="lbl">On-Peak 09:00–22:00 · ${(d.peak_kwh*(d.rate_peak||6.38)).toFixed(0)} ฿</div></div>
+      <div class="card c-off"><div class="val">${d.offpeak_kwh.toFixed(1)} หน่วย</div>
+        <div class="lbl">Off-Peak · ${(d.offpeak_kwh*(d.rate_offpeak||3.00)).toFixed(0)} ฿</div></div>
+      <div class="card c-sol"><div class="val">${d.solar.toFixed(1)} หน่วย</div>
+        <div class="lbl">Solar ผลิต (sim)</div></div>
+      <div class="card c-save"><div class="val">${d.saving.toFixed(0)} ฿</div>
+        <div class="lbl">ประหยัด (${d.cost_no.toFixed(0)} → ${d.cost_with.toFixed(0)} ฿)</div></div>
+      <div class="card" style="border-left:4px solid #1abc9c"><div class="val">${d.spill.toFixed(2)} หน่วย</div>
+        <div class="lbl">⚡ ไฟเหลือทิ้ง (ใช้ได้ฟรี) มูลค่า ${(d.spill_value||0).toFixed(0)} ฿</div></div>
+    </div>
+    <h2>1. การใช้ไฟรายชั่วโมง (TOU)</h2>
+    <div class="chart" id="c1" style="height:300px"></div>
+    <h2>2. Solar + Battery Simulation</h2>
+    <div class="chart" id="c2" style="height:300px"></div>
+    <div class="chart" id="c3" style="height:190px"></div>
+    <h2>3. ค่าไฟ: ไม่มี Solar vs With Solar+Battery</h2>
+    <div class="chart" id="c4" style="height:250px"></div>
+    <h2>4. Use Case: +แอร์ 670W 07:00–17:00</h2>
+    <div class="grid4">
+      <div class="card c-ac"><div class="val">+${(total_ac-d.consumed).toFixed(1)} หน่วย</div>
+        <div class="lbl">ใช้เพิ่ม (670W×10h)</div></div>
+      <div class="card c-save"><div class="val">${d.with_ac.cost_with.toFixed(0)} ฿</div>
+        <div class="lbl">ค่าไฟ with solar+battery+AC</div></div>
+      <div class="card c-off"><div class="val">+${extra_cost.toFixed(0)} ฿</div>
+        <div class="lbl">เพิ่มจาก no-AC</div></div>
+      <div class="card c-sol"><div class="val">${spill_ac.toFixed(2)} หน่วย</div>
+        <div class="lbl">Spill ที่เหลือ (with AC)</div></div>
+    </div>
+    <div class="chart" id="c5" style="height:260px"></div>
+    <h2>5. ตารางรายชั่วโมง</h2>
+    <table><tr><th>ชั่วโมง</th><th>TOU</th><th>ใช้ (kWh)</th><th>Solar</th>
+      <th>Grid</th><th>SOC</th><th>Spill</th>
+      <th>ค่าไฟ (no solar)</th><th>ค่าไฟ (w/solar)</th><th>ประหยัด</th></tr>
+      ${tableRows}</table>
+    <p class="note">* Solar: 10×650W=6.5kWp · Deye 5kW · PR=0.67 · PVGIS TMY Bangkok</p>
+    <p class="note">* Battery: RAPD 15.36kWh · floor 20% · self-consumption</p>`;
+
+  document.getElementById('loading').style.display='none';
+  document.getElementById('content').style.display='block';
+
+  Plotly.newPlot('c1',[{x:H,y:consumed,type:'bar',name:'ใช้ (kWh)',marker:{color:bar_color}}],
+    {title:`การใช้ไฟรายชั่วโมง (แดง=Peak ${d.rate_peak||6.38}฿ · น้ำเงิน=Off ${d.rate_offpeak||3.00}฿)`,
+     xaxis:{title:'เวลา'},yaxis:{title:'kWh'},margin:{t:40,b:40},plot_bgcolor:'#fff'});
+
+  Plotly.newPlot('c2',[
+    {x:H,y:consumed,type:'bar',name:'ใช้จริง',marker:{color:'#bdc3c7'},opacity:0.6},
+    {x:H,y:solar,type:'bar',name:'Solar',marker:{color:'#f39c12'},opacity:0.8},
+    {x:H,y:grid,type:'scatter',mode:'lines+markers',name:'Grid import',line:{color:'#e74c3c',width:2}},
+    {x:H,y:spill,type:'bar',name:'Spill',marker:{color:'#2ecc71'},opacity:0.5}
+  ],{title:'Solar vs Consumption (with battery)',barmode:'overlay',
+     xaxis:{title:'เวลา'},yaxis:{title:'kWh'},margin:{t:40,b:40},plot_bgcolor:'#fff'});
+
+  Plotly.newPlot('c3',[
+    {x:H,y:bat_soc,type:'scatter',mode:'lines+markers',name:'Battery SOC %',
+     line:{color:'#9b59b6',width:2},fill:'tozeroy',fillcolor:'rgba(155,89,182,0.12)'},
+    {x:H,y:Array(H.length).fill(20),type:'scatter',mode:'lines',name:'Floor 20%',
+     line:{color:'#e74c3c',width:1,dash:'dot'}}
+  ],{title:`Battery SOC % (เริ่มต้น ${d.bat_start_soc.toFixed(0)}%)`,
+     xaxis:{title:'เวลา'},yaxis:{title:'%',range:[0,105]},
+     margin:{t:40,b:36},plot_bgcolor:'#fff'});
+
+  Plotly.newPlot('c4',[
+    {x:H,y:cost_no,type:'bar',name:'ไม่มี Solar',marker:{color:'#e74c3c'},opacity:0.8},
+    {x:H,y:cost_with,type:'bar',name:'with Solar+Battery',marker:{color:'#27ae60'},opacity:0.8}
+  ],{title:'ค่าไฟต่อชั่วโมง (บาท)',barmode:'group',
+     xaxis:{title:'เวลา'},yaxis:{title:'บาท'},margin:{t:40,b:40},plot_bgcolor:'#fff'});
+
+  Plotly.newPlot('c5',[
+    {x:H,y:consumed,type:'bar',name:'ไม่มีแอร์',marker:{color:'#3498db'},opacity:0.6},
+    {x:H,y:consumed_ac,type:'bar',name:'+แอร์ 670W',marker:{color:'#e67e22'},opacity:0.7},
+    {x:H,y:grid_ac,type:'scatter',mode:'lines+markers',name:'Grid (with AC)',
+     line:{color:'#c0392b',width:2}}
+  ],{title:'Use Case: +แอร์ 670W 07:00–17:00',barmode:'overlay',
+     xaxis:{title:'เวลา'},yaxis:{title:'kWh'},margin:{t:40,b:40},plot_bgcolor:'#fff'});
+}
+</script>
+</body></html>

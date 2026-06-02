@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>EV Report — 2026-06</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+  body{font-family:'Sarabun','TH Sarabun New',sans-serif;font-size:11pt;background:#fafafa;margin:0;padding:20px}
+  h1{font-size:16pt;border-bottom:2px solid #333;padding-bottom:6px;margin-top:0}
+  h2{font-size:13pt;border-bottom:1px solid #aaa;padding-bottom:3px;margin-top:28px;color:#444}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0}
+  .card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:12px 16px}
+  .card .val{font-size:19pt;font-weight:bold;color:#2c3e50}
+  .card .lbl{font-size:9pt;color:#888;margin-top:3px}
+  .c1{border-left:4px solid #8e44ad}.c2{border-left:4px solid #2980b9}
+  .c3{border-left:4px solid #e74c3c}.c4{border-left:4px solid #27ae60}
+  .chart{background:#fff;border:1px solid #eee;border-radius:6px;margin:10px 0;padding:6px}
+  table{border-collapse:collapse;width:100%;font-size:10pt;margin:8px 0}
+  th,td{border:1px solid #ddd;padding:5px 10px;text-align:right}
+  th{background:#f5f5f5;text-align:center}
+  tr:nth-child(even){background:#f9f9f9}
+  .total{font-weight:bold;background:#f0f0f0}
+</style>
+</head>
+<body>
+<h1>รายงานการชาร์จ EV — รอบบิล 14 May 2026 – 14 Jun 2026</h1>
+<p style="color:#666;font-size:10pt">Phase B · อัตรา Off-Peak 2.9955 บาท/หน่วย ตลอด (EV ชาร์จกลางดึก 22:00–06:00)</p>
+
+<div class="grid4">
+  <div class="card c1">
+    <div class="val">6 ครั้ง</div>
+    <div class="lbl">จำนวนครั้งที่ชาร์จในรอบนี้</div>
+  </div>
+  <div class="card c2">
+    <div class="val">271.2 หน่วย</div>
+    <div class="lbl">รวม kWh · ใช้เวลา 37.9h</div>
+  </div>
+  <div class="card c3">
+    <div class="val">812 ฿</div>
+    <div class="lbl">ค่าไฟ EV รอบนี้ทั้งหมด</div>
+  </div>
+  <div class="card c4">
+    <div class="val">45.2 หน่วย</div>
+    <div class="lbl">เฉลี่ยต่อครั้ง · 135 ฿/ครั้ง</div>
+  </div>
+</div>
+
+<h2>kWh ต่อวัน</h2>
+<div class="chart" id="chart_daily" style="height:260px"></div>
+
+<h2>รายละเอียดแต่ละ Session</h2>
+<table>
+<tr><th>#</th><th>วันที่</th><th>เริ่ม</th><th>สิ้นสุด</th>
+    <th>ระยะเวลา</th><th>กำลัง avg</th><th>kWh</th><th>บาท</th></tr>
+<tr><td>1</td><td>2026-05-15</td><td>22:15</td><td>04:26</td><td>371 min (6.2h)</td><td>7.17 kW</td><td><strong>44.33</strong></td><td><strong>132.78</strong></td></tr>
+<tr><td>2</td><td>2026-05-19</td><td>22:15</td><td>03:50</td><td>335 min (5.6h)</td><td>7.16 kW</td><td><strong>39.95</strong></td><td><strong>119.66</strong></td></tr>
+<tr><td>3</td><td>2026-05-22</td><td>22:15</td><td>05:27</td><td>433 min (7.2h)</td><td>7.15 kW</td><td><strong>51.58</strong></td><td><strong>154.51</strong></td></tr>
+<tr><td>4</td><td>2026-05-24</td><td>22:26</td><td>05:09</td><td>403 min (6.7h)</td><td>7.17 kW</td><td><strong>48.15</strong></td><td><strong>144.23</strong></td></tr>
+<tr><td>5</td><td>2026-05-27</td><td>22:15</td><td>04:29</td><td>374 min (6.2h)</td><td>7.16 kW</td><td><strong>44.67</strong></td><td><strong>133.82</strong></td></tr>
+<tr><td>6</td><td>2026-05-30</td><td>20:17</td><td>02:15</td><td>357 min (6.0h)</td><td>7.14 kW</td><td><strong>42.55</strong></td><td><strong>127.46</strong></td></tr>
+<tr class="total"><td colspan="6">รวม</td><td>271.23</td><td>812.46</td></tr>
+</table>
+<p style="color:#888;font-size:9pt">* Cross-check: energy_b sensor แสดง 271.64 kWh ในช่วงนี้</p>
+
+<h2>พฤติกรรมการชาร์จ (กำลังเฉลี่ย)</h2>
+<div class="chart" id="chart_power" style="height:260px"></div>
+
+<script>
+Plotly.newPlot('chart_daily',[{
+  x:["2026-05-15", "2026-05-19", "2026-05-22", "2026-05-24", "2026-05-27", "2026-05-30"], y:[44.33, 39.95, 51.58, 48.15, 44.67, 42.55],
+  type:'bar', name:'kWh/วัน', marker:{color:'#8e44ad'},
+  text:["44.33", "39.95", "51.58", "48.15", "44.67", "42.55"], textposition:'outside'
+}],{
+  title:'kWh ชาร์จ EV แต่ละวัน',
+  xaxis:{title:'วันที่'}, yaxis:{title:'kWh'},
+  margin:{t:40,b:60}, plot_bgcolor:'#fff'
+});
+
+const sess_labels = ["#1 05/15 22:15", "#2 05/19 22:15", "#3 05/22 22:15", "#4 05/24 22:26", "#5 05/27 22:15", "#6 05/30 20:17"];
+const sess_kwh    = [44.33, 39.95, 51.58, 48.15, 44.67, 42.55];
+const sess_kw     = [7.17, 7.16, 7.15, 7.17, 7.16, 7.14];
+Plotly.newPlot('chart_power',[
+  {x:sess_labels, y:sess_kw, type:'bar', name:'กำลัง avg (kW)',
+    marker:{color:'#2980b9'}, yaxis:'y2'},
+  {x:sess_labels, y:sess_kwh, type:'bar', name:'kWh',
+    marker:{color:'#8e44ad'}, opacity:0.7}
+],{
+  title:'กำลังและพลังงานแต่ละ Session',
+  barmode:'group',
+  xaxis:{title:'Session'},
+  yaxis:{title:'kWh'},
+  yaxis2:{title:'kW', overlaying:'y', side:'right', showgrid:false},
+  margin:{t:40,b:80}, plot_bgcolor:'#fff'
+});
+</script>
+</body></html>

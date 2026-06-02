@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Monthly Summary</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:'Sarabun','TH Sarabun New',sans-serif;font-size:11pt;background:#f0f2f5;margin:0;padding:0}
+  #main{padding:18px 20px}
+  h1{font-size:15pt;border-bottom:2px solid #333;padding-bottom:6px;margin-top:0}
+  h2{font-size:12pt;border-bottom:1px solid #aaa;padding-bottom:3px;margin-top:24px;color:#444}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:12px 0}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0}
+  .card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:12px 16px}
+  .card .val{font-size:18pt;font-weight:bold;color:#2c3e50}
+  .card .lbl{font-size:9pt;color:#888;margin-top:3px}
+  .c1{border-left:4px solid #e74c3c}.c2{border-left:4px solid #3498db}
+  .c3{border-left:4px solid #27ae60}.c4{border-left:4px solid #f39c12}
+  .c5{border-left:4px solid #9b59b6}.c6{border-left:4px solid #1abc9c}
+  .chart{background:#fff;border:1px solid #eee;border-radius:6px;margin:8px 0;padding:6px}
+  table{border-collapse:collapse;width:100%;font-size:10pt;margin:8px 0}
+  th,td{border:1px solid #ddd;padding:4px 8px;text-align:right}
+  th{background:#f5f5f5;text-align:center}
+  .row-weekday td:first-child{border-left:3px solid #e74c3c}
+  .row-weekend td:first-child{border-left:3px solid #3498db}
+  .row-holiday td:first-child{border-left:3px solid #9b59b6}
+  .total{font-weight:bold;background:#f0f0f0}
+  .proj{background:#fffde7;color:#888;font-style:italic}
+  .row-clickable{cursor:pointer}.row-clickable:hover{background:#f0f7ff!important}
+  .note{font-size:9pt;color:#999;margin:4px 0}
+  .nav-bar{background:#2c3e50;color:#fff;padding:10px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .nav-bar a{color:#bdc3c7;text-decoration:none;font-size:10pt}
+  .nav-bar a.active,.nav-bar a:hover{color:#f39c12}
+  .nav-bar select{padding:4px 8px;border-radius:4px;border:none;font-size:10pt;cursor:pointer}
+  .nav-logo{color:#f39c12!important;font-weight:bold;font-size:13pt!important}
+</style>
+</head>
+<body>
+<div id="nav" class="nav-bar"></div>
+<div id="main">
+  <div id="loading" style="color:#888;padding:30px;text-align:center;font-size:12pt">กำลังโหลดข้อมูล...</div>
+  <div id="content" style="display:none"></div>
+</div>
+
+<script>
+let globalIdx = {monthly:[],daily:[],ev:[]};
+let currentMonth = new URLSearchParams(location.search).get('month');
+
+function buildNav(month) {
+  const opts = globalIdx.monthly.map(m=>
+    `<option value="${m}"${m===month?' selected':''}>${m}</option>`).join('');
+  const latestDate = (globalIdx.daily||[])[0]||'';
+  document.getElementById('nav').innerHTML=`
+    <a href="index.html" class="nav-logo">⚡ Power Stats</a>
+    <select onchange="loadMonth(this.value);history.pushState({},'','monthly.html?month='+this.value)">${opts}</select>
+    <a href="index.html">🏠 หน้าหลัก</a>
+    <a href="monthly.html?month=${month}" class="active">📋 Monthly</a>
+    <a href="daily.html?date=${latestDate}">📅 Daily</a>
+    <a href="ev.html?month=${month}">🔌 EV</a>`;
+}
+
+fetch(`index.json?v=${Date.now()}`)
+  .then(r=>r.json()).then(idx=>{
+    globalIdx=idx;
+    if(!currentMonth) currentMonth=(idx.monthly||[])[0];
+    buildNav(currentMonth||'');
+    if(currentMonth) loadMonth(currentMonth);
+    else document.getElementById('loading').textContent='ไม่พบข้อมูล';
+  })
+  .catch(()=>{ buildNav(currentMonth||''); if(currentMonth) loadMonth(currentMonth); });
+
+function loadMonth(m) {
+  currentMonth=m;
+  document.getElementById('loading').style.display='block';
+  document.getElementById('content').style.display='none';
+  fetch(`data/monthly_${m}.json?v=${Date.now()}`)
+    .then(r=>{ if(!r.ok) throw new Error(); return r.json(); })
+    .then(data=>renderMonthly(data))
+    .catch(()=>{ document.getElementById('loading').textContent=`ไม่พบข้อมูลเดือน ${m}`; });
+}
+
+function fmtAvg(obj,key,unit='฿') {
+  const v=obj?obj[key]:null;
+  return v!=null ? v.toFixed(0)+' '+unit : '—';
+}
+
+function renderMonthly(d) {
+  const today = new Date().toISOString().slice(0,10);
+  const bColor = {weekday:'#e74c3c',weekend:'#3498db',holiday:'#9b59b6'};
+  const dates  = d.days.map(r=>r.date);
+  const dcolor = d.days.map(r=>bColor[r.dtype]||'#888');
+  const consumed_g  = d.days.map(r=>r.consumed);
+  const solar_g     = d.days.map(r=>r.solar);
+  const saving_g    = d.days.map(r=>r.saving);
+  const peak_g      = d.days.map(r=>r.peak_kwh);
+  const offpeak_g   = d.days.map(r=>r.offpeak_kwh);
+  const cumul = saving_g.reduce((acc,v,i)=>{acc.push((acc[i-1]||0)+v);return acc;},[]);
+
+  const heatmap_z    = d.days.map(r=>r.hourly_kwh||Array(24).fill(0));
+  const hours = Array.from({length:24},(_,i)=>String(i).padStart(2,'0')+':00');
+
+  const dtype_th = {weekday:'วันธรรมดา',weekend:'เสาร์/อาทิตย์',holiday:'วันหยุด'};
+
+  // Build table rows
+  let rows='', cumul_save=0;
+  d.days.forEach(dd=>{
+    const n_h    = dd.n_hours||24;
+    const isToday= dd.date===today;
+    const partial= n_h<20 && isToday;
+    const scale  = (partial && n_h>0) ? 24/n_h : 1.0;
+    const disp   = partial ? {
+      consumed:   dd.consumed*scale,   peak_kwh:    dd.peak_kwh*scale,
+      offpeak_kwh:dd.offpeak_kwh*scale,solar:       dd.solar,
+      spill:      dd.spill,            cost_no:     dd.cost_no*scale,
+      cost_with:  dd.cost_with*scale,  saving:      dd.saving*scale
+    } : dd;
+    cumul_save += disp.saving;
+    const warn = dd.bad_hours>0?' ⚠️':'';
+    const tag  = partial?` <span style="color:#e67e22;font-size:8pt">~${n_h}h×${scale.toFixed(1)}</span>`:'';
+    const rc   = `row-${dd.dtype} row-clickable`;
+    rows+=`<tr class="${rc}" onclick="window.location='daily.html?date=${dd.date}'">
+      <td style="text-align:left">${dd.date}${warn}${tag}</td>
+      <td>${dtype_th[dd.dtype]||dd.dtype}</td>
+      <td>${disp.consumed.toFixed(1)}</td>
+      <td style="color:#e74c3c">${disp.peak_kwh.toFixed(1)}</td>
+      <td style="color:#3498db">${disp.offpeak_kwh.toFixed(1)}</td>
+      <td style="color:#f39c12">${disp.solar.toFixed(1)}</td>
+      <td style="color:#aaa">${disp.spill.toFixed(2)}</td>
+      <td>${disp.cost_no.toFixed(0)}</td>
+      <td><strong>${disp.cost_with.toFixed(0)}</strong></td>
+      <td style="color:#2980b9"><strong>+${disp.saving.toFixed(0)}</strong></td>
+      <td style="color:#888">${cumul_save.toFixed(0)}</td>
+    </tr>`;
+  });
+  rows+=`<tr class="total"><td colspan="2">รวม ${d.total_days} วัน</td>
+    <td>${d.total_consumed.toFixed(1)}</td>
+    <td>${d.total_peak.toFixed(1)}</td><td>${d.total_offpeak.toFixed(1)}</td>
+    <td>${d.total_solar.toFixed(1)}</td><td>${d.total_spill.toFixed(2)}</td>
+    <td>${d.total_cost_no.toFixed(0)}</td>
+    <td><strong>${d.total_cost_with.toFixed(0)}</strong></td>
+    <td><strong>+${d.total_saving.toFixed(0)}</strong></td>
+    <td></td></tr>
+  <tr class="proj"><td colspan="2">Projected ${d.days_in_period} วัน</td>
+    <td colspan="5" style="font-style:italic;color:#888">
+      เหลือ ${d.rem_wkd} วันธรรมดา + ${d.rem_offd} เสาร์/อาทิตย์/หยุด</td>
+    <td>${d.proj_cost_no}</td>
+    <td><strong>${d.proj_cost_with}</strong></td>
+    <td><strong>+${d.proj_saving}</strong></td>
+    <td></td></tr>`;
+
+  // Projection breakdown
+  let projRows='';
+  if(d.n_avg_wkd>0)
+    projRows+=`<tr><td>📅 วันธรรมดา (${d.n_avg_wkd} วัน)</td>
+      <td>${fmtAvg(d.avg_wkd,'consumed','หน่วย')}</td>
+      <td>${fmtAvg(d.avg_wkd,'cost_no')}</td>
+      <td>${fmtAvg(d.avg_wkd,'cost_with')}</td>
+      <td>+${fmtAvg(d.avg_wkd,'saving')}</td>
+      <td style="color:#888">เหลือ <strong>${d.rem_wkd}</strong> วัน</td></tr>`;
+  if(d.n_avg_offd>0)
+    projRows+=`<tr><td>📆 เสาร์/อาทิตย์/หยุด (${d.n_avg_offd} วัน)</td>
+      <td>${fmtAvg(d.avg_offd,'consumed','หน่วย')}</td>
+      <td>${fmtAvg(d.avg_offd,'cost_no')}</td>
+      <td>${fmtAvg(d.avg_offd,'cost_with')}</td>
+      <td>+${fmtAvg(d.avg_offd,'saving')}</td>
+      <td style="color:#888">เหลือ <strong>${d.rem_offd}</strong> วัน</td></tr>`;
+
+  const ps = new Date(d.period_start).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
+  const pe = new Date(d.period_end).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
+
+  document.getElementById('content').innerHTML=`
+    <h1>Monthly Summary — รอบบิล ${ps} – ${pe}</h1>
+    <p style="color:#666;font-size:10pt">ข้อมูล ${d.total_days}/${d.days_in_period} วัน · Solar 6.5kWp + Deye 5kW · PR=0.67 · RAPD 15.36kWh · MEA TOU ${d.rate_peak||'6.38'}/${d.rate_offpeak||'3.00'}฿</p>
+    <div class="grid4">
+      <div class="card c1"><div class="val">${d.total_consumed.toFixed(0)} หน่วย</div>
+        <div class="lbl">รวมใช้ไฟ (${d.total_days} วัน)</div></div>
+      <div class="card c2"><div class="val">${d.total_cost_no.toFixed(0)} ฿</div>
+        <div class="lbl">ค่าไฟถ้าไม่มี solar</div></div>
+      <div class="card c3"><div class="val">${d.total_cost_with.toFixed(0)} ฿</div>
+        <div class="lbl">ค่าไฟ with solar+battery</div></div>
+      <div class="card c4"><div class="val">+${d.total_saving.toFixed(0)} ฿</div>
+        <div class="lbl">ประหยัดรวม ${d.total_days} วัน</div></div>
+    </div>
+    <div class="grid4">
+      <div class="card c5"><div class="val">${d.total_solar.toFixed(0)} หน่วย</div>
+        <div class="lbl">Solar ผลิต (sim)</div></div>
+      <div class="card" style="border-left:4px solid #1abc9c"><div class="val">${d.total_spill.toFixed(1)} หน่วย</div>
+        <div class="lbl">⚡ ไฟเหลือทิ้ง (ใช้ได้ฟรี) มูลค่า ${(d.total_spill_value||0).toFixed(0)} ฿</div></div>
+      <div class="card c6"><div class="val">+${d.proj_saving} ฿</div>
+        <div class="lbl">Projected saving เต็มรอบ (${d.days_in_period} วัน)</div></div>
+      <div class="card c3"><div class="val">${d.proj_cost_with} ฿</div>
+        <div class="lbl">Projected Phase A (เทียบ ${d.proj_cost_no}฿ ไม่มี solar)</div></div>
+    </div>
+    ${d.ev_sessions>0 ? `
+    <h2 style="margin-top:16px">รวมค่าไฟทั้งหมด (Phase A + EV Phase B)</h2>
+    <div class="grid4">
+      <div class="card" style="border-left:4px solid #e67e22"><div class="val">${d.ev_kwh.toFixed(1)} หน่วย</div>
+        <div class="lbl">EV ชาร์จรอบนี้ (${d.ev_sessions} ครั้ง · ${d.ev_hours.toFixed(1)}h)</div></div>
+      <div class="card" style="border-left:4px solid #e67e22"><div class="val">${d.ev_cost.toFixed(0)} ฿</div>
+        <div class="lbl">ค่าไฟ EV Phase B</div></div>
+      <div class="card c1"><div class="val">${d.total_bill.toFixed(0)} ฿</div>
+        <div class="lbl">รวมจ่ายจริง (Phase A + EV) · ${d.total_days} วัน</div></div>
+      <div class="card c3"><div class="val">${d.proj_bill.toFixed(0)} ฿</div>
+        <div class="lbl">Projected รวม EV เต็มรอบ</div></div>
+    </div>` : ''}
+    <h2>Projection Breakdown</h2>
+    <table style="width:auto;font-size:10pt">
+      <tr style="background:#f5f5f5"><th style="text-align:left">ประเภทวัน</th>
+        <th>avg kWh</th><th>avg ค่าไฟ (no solar)</th>
+        <th>avg ค่าไฟ (w/solar)</th><th>avg ประหยัด</th><th>วันที่เหลือ</th></tr>
+      ${projRows}
+    </table>
+    <h2>1. การใช้ไฟรายวัน</h2>
+    <div class="chart" id="c1" style="height:280px"></div>
+    <h2>2. ประหยัดรายวัน + สะสม</h2>
+    <div class="chart" id="c2" style="height:260px"></div>
+    <h2>3. TOU Breakdown รายวัน</h2>
+    <div class="chart" id="c3" style="height:260px"></div>
+    <h2>4. Heatmap การใช้ไฟ (ชั่วโมง × วัน)</h2>
+    <div class="chart" id="c4" style="height:300px"></div>
+    <h2>5. ตารางสรุปรายวัน <span style="font-size:9pt;color:#888;font-weight:normal">(คลิกแถวเพื่อดู daily report)</span></h2>
+    <table>
+      <tr><th>วันที่</th><th>ประเภท</th><th>รวม kWh</th>
+        <th>Peak kWh</th><th>Off kWh</th><th>Solar</th><th>Spill</th>
+        <th>ค่าไฟ (no solar)</th><th>ค่าไฟ (w/solar)</th><th>ประหยัด</th><th>สะสม</th></tr>
+      ${rows}
+    </table>
+    <p class="note">⚠️ = ชั่วโมงที่ data ไม่ครบ · 🔴=วันธรรมดา · 🔵=เสาร์/อาทิตย์ · 🟣=วันหยุด</p>`;
+
+  document.getElementById('loading').style.display='none';
+  document.getElementById('content').style.display='block';
+
+  // Split consumed into 3 traces so legend shows correct colors
+  const mk = (dtype,color) => ({
+    x: dates.filter((_,i)=>d.days[i].dtype===dtype),
+    y: consumed_g.filter((_,i)=>d.days[i].dtype===dtype),
+    type:'bar', name:{weekday:'วันธรรมดา',weekend:'เสาร์/อาทิตย์',holiday:'วันหยุด'}[dtype],
+    marker:{color}, opacity:0.8
+  });
+  Plotly.newPlot('c1',[
+    mk('weekday','#e74c3c'), mk('weekend','#3498db'), mk('holiday','#9b59b6'),
+    {x:dates,y:solar_g,type:'bar',name:'Solar (sim)',marker:{color:'#f39c12'},opacity:0.7}
+  ],{title:'การใช้ไฟรายวัน',barmode:'overlay',
+     xaxis:{title:'วันที่'},yaxis:{title:'kWh'},margin:{t:40,b:60},plot_bgcolor:'#fff'});
+
+  Plotly.newPlot('c2',[
+    {x:dates,y:saving_g,type:'bar',name:'ประหยัด/วัน (฿)',marker:{color:'#27ae60'},opacity:0.8},
+    {x:dates,y:cumul,type:'scatter',mode:'lines+markers',name:'สะสม (฿)',
+     line:{color:'#2980b9',width:2},yaxis:'y2'}
+  ],{title:'ประหยัดรายวัน + สะสม',
+     xaxis:{title:'วันที่'},yaxis:{title:'฿/วัน'},
+     yaxis2:{title:'สะสม (฿)',overlaying:'y',side:'right',showgrid:false},
+     margin:{t:40,b:60},plot_bgcolor:'#fff'});
+
+  Plotly.newPlot('c3',[
+    {x:dates,y:peak_g,type:'bar',name:`Peak (${d.rate_peak||6.38}฿)`,marker:{color:'#e74c3c'}},
+    {x:dates,y:offpeak_g,type:'bar',name:`Off-Peak (${d.rate_offpeak||3.00}฿)`,marker:{color:'#3498db'}}
+  ],{title:'TOU Breakdown รายวัน',barmode:'stack',
+     xaxis:{title:'วันที่'},yaxis:{title:'kWh'},margin:{t:40,b:60},plot_bgcolor:'#fff'});
+
+  Plotly.newPlot('c4',[{
+    z:heatmap_z,x:hours,y:dates,type:'heatmap',
+    colorscale:[[0,'#f8f9fa'],[0.2,'#aed6f1'],[0.5,'#f39c12'],[0.8,'#e74c3c'],[1,'#7b241c']],
+    zmin:0,colorbar:{title:'kWh'},
+    hovertemplate:'%{y} %{x}<br>%{z:.2f} kWh<extra></extra>'
+  }],{title:'การใช้ไฟรายชั่วโมง (แดง=ใช้เยอะ)',
+      xaxis:{title:'ชั่วโมง'},yaxis:{title:'วันที่',autorange:'reversed'},
+      margin:{t:40,b:60},plot_bgcolor:'#fff'});
+}
+</script>
+</body></html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Power Report — 2026-05-27</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+  body{font-family:'Sarabun','TH Sarabun New',sans-serif;font-size:11pt;background:#fafafa;margin:0;padding:20px}
+  h1{font-size:16pt;border-bottom:2px solid #333;padding-bottom:6px;margin-top:0}
+  h2{font-size:13pt;border-bottom:1px solid #aaa;padding-bottom:3px;margin-top:28px;color:#444}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0}
+  .card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:12px 16px}
+  .card .val{font-size:19pt;font-weight:bold;color:#2c3e50}
+  .card .lbl{font-size:9pt;color:#888;margin-top:3px}
+  .c-peak{border-left:4px solid #e74c3c}
+  .c-off{border-left:4px solid #3498db}
+  .c-sol{border-left:4px solid #f39c12}
+  .c-save{border-left:4px solid #27ae60}
+  .c-ac{border-left:4px solid #9b59b6}
+  .c-spill{border-left:4px solid #1abc9c}
+  .chart{background:#fff;border:1px solid #eee;border-radius:6px;margin:10px 0;padding:6px}
+  table{border-collapse:collapse;width:100%;font-size:10pt;margin:8px 0}
+  th,td{border:1px solid #ddd;padding:4px 8px;text-align:right}
+  th{background:#f5f5f5;text-align:center}
+  .peak-bg{background:#fff8f8}.off-bg{background:#f8faff}
+  .imp-bg{background:#fef0f0;border-left:3px solid #e74c3c}
+  .total{font-weight:bold;background:#f0f0f0}
+  .note{font-size:9pt;color:#999;margin:4px 0}
+</style>
+</head>
+<body>
+<h1>รายงานการใช้ไฟ — 2026-05-27 (พุธ) · วันธรรมดา (TOU)</h1>
+
+
+<div class="grid4">
+  <div class="card c-peak">
+    <div class="val">16.5 หน่วย</div>
+    <div class="lbl">On-Peak 09:00–22:00 · 105 ฿</div>
+  </div>
+  <div class="card c-off">
+    <div class="val">16.9 หน่วย</div>
+    <div class="lbl">Off-Peak · 51 ฿</div>
+  </div>
+  <div class="card c-sol">
+    <div class="val">24.3 หน่วย</div>
+    <div class="lbl">Solar ผลิตได้ (sim)</div>
+  </div>
+  <div class="card c-save">
+    <div class="val">125 ฿</div>
+    <div class="lbl">ประหยัด/วัน (156 → 30 ฿)</div>
+  </div>
+  <div class="card c-spill">
+    <div class="val">0.00 หน่วย</div>
+    <div class="lbl">⚡ ไฟเหลือทิ้ง (ใช้ได้ฟรี) มูลค่า 0 ฿</div>
+  </div>
+</div>
+
+<h2>1. การใช้ไฟรายชั่วโมง (TOU)</h2>
+<div class="chart" id="c1" style="height:320px"></div>
+
+<h2>2. Solar Simulation · 10×645W (6.45 kWp) + Solis 6kW + LVtopsun 16.07 kWh</h2>
+<div class="chart" id="c2" style="height:320px"></div>
+<div class="chart" id="c3" style="height:200px"></div>
+
+<h2>3. ค่าไฟ: ไม่มี Solar vs With Solar+Battery</h2>
+<div class="chart" id="c4" style="height:260px"></div>
+
+<h2>4. Use Case: เปิดแอร์ 670W ตลอด 07:00–17:00</h2>
+<div class="grid4">
+  <div class="card c-ac">
+    <div class="val">+6.7 หน่วย</div>
+    <div class="lbl">ใช้ไฟเพิ่ม (670W × 10h)</div>
+  </div>
+  <div class="card c-save">
+    <div class="val">48 ฿</div>
+    <div class="lbl">ค่าไฟ with solar+battery+AC</div>
+  </div>
+  <div class="card c-off">
+    <div class="val">+17 ฿</div>
+    <div class="lbl">เพิ่มจาก no-AC scenario</div>
+  </div>
+  <div class="card c-sol">
+    <div class="val">0.00 หน่วย</div>
+    <div class="lbl">Spill ที่เหลือ (with AC)</div>
+  </div>
+</div>
+<div class="chart" id="c5" style="height:280px"></div>
+
+<h2>5. ตารางรายชั่วโมง</h2>
+<table>
+<tr><th>ชั่วโมง</th><th>TOU</th><th>ใช้ (kWh)</th><th>Solar</th>
+    <th>Grid</th><th>SOC</th><th>Spill</th>
+    <th>ค่าไฟ (no solar)</th><th>ค่าไฟ (w/solar)</th><th>ประหยัด</th><th>readings</th></tr>
+<tr class="off-bg"><td>00:00</td><td>Off</td><td>1.690</td><td>0.000</td><td>1.467</td><td>10%</td><td>0.000</td><td>5.06</td><td>4.39</td><td>+0.67</td><td style="color:#aaa;font-size:9pt">52</td></tr>
+<tr class="off-bg"><td>01:00</td><td>Off</td><td>1.530</td><td>0.000</td><td>1.530</td><td>10%</td><td>0.000</td><td>4.58</td><td>4.58</td><td>0.00</td><td style="color:#aaa;font-size:9pt">48</td></tr>
+<tr class="off-bg"><td>02:00</td><td>Off</td><td>1.370</td><td>0.000</td><td>1.370</td><td>10%</td><td>0.000</td><td>4.10</td><td>4.10</td><td>0.00</td><td style="color:#aaa;font-size:9pt">42</td></tr>
+<tr class="off-bg"><td>03:00</td><td>Off</td><td>1.390</td><td>0.000</td><td>1.390</td><td>10%</td><td>0.000</td><td>4.16</td><td>4.16</td><td>0.00</td><td style="color:#aaa;font-size:9pt">43</td></tr>
+<tr class="off-bg"><td>04:00</td><td>Off</td><td>1.330</td><td>0.000</td><td>1.330</td><td>10%</td><td>0.000</td><td>3.98</td><td>3.98</td><td>0.00</td><td style="color:#aaa;font-size:9pt">40</td></tr>
+<tr class="off-bg"><td>05:00</td><td>Off</td><td>1.850</td><td>0.000</td><td>1.850</td><td>10%</td><td>0.000</td><td>5.54</td><td>5.54</td><td>0.00</td><td style="color:#aaa;font-size:9pt">49</td></tr>
+<tr class="off-bg"><td>06:00</td><td>Off</td><td>1.380</td><td>0.151</td><td>1.229</td><td>10%</td><td>0.000</td><td>4.13</td><td>3.68</td><td>+0.45</td><td style="color:#aaa;font-size:9pt">42</td></tr>
+<tr class="off-bg"><td>07:00</td><td>Off</td><td>0.940</td><td>0.938</td><td>0.002</td><td>10%</td><td>0.000</td><td>2.82</td><td>0.01</td><td>+2.81</td><td style="color:#aaa;font-size:9pt">31</td></tr>
+<tr class="off-bg"><td>08:00</td><td>Off</td><td>1.020</td><td>1.729</td><td>0.000</td><td>14%</td><td>0.000</td><td>3.06</td><td>0.00</td><td>+3.06</td><td style="color:#aaa;font-size:9pt">31</td></tr>
+<tr class="peak-bg"><td>09:00</td><td>Peak</td><td>0.630</td><td>2.437</td><td>0.000</td><td>26%</td><td>0.000</td><td>4.02</td><td>0.00</td><td>+4.02</td><td style="color:#aaa;font-size:9pt">22</td></tr>
+<tr class="peak-bg"><td>10:00</td><td>Peak</td><td>0.630</td><td>2.939</td><td>0.000</td><td>40%</td><td>0.000</td><td>4.02</td><td>0.00</td><td>+4.02</td><td style="color:#aaa;font-size:9pt">21</td></tr>
+<tr class="peak-bg"><td>11:00</td><td>Peak</td><td>0.870</td><td>3.232</td><td>0.000</td><td>55%</td><td>0.000</td><td>5.55</td><td>0.00</td><td>+5.55</td><td style="color:#aaa;font-size:9pt">28</td></tr>
+<tr class="peak-bg"><td>12:00</td><td>Peak</td><td>0.960</td><td>3.263</td><td>0.000</td><td>69%</td><td>0.000</td><td>6.12</td><td>0.00</td><td>+6.12</td><td style="color:#aaa;font-size:9pt">33</td></tr>
+<tr class="peak-bg"><td>13:00</td><td>Peak</td><td>1.160</td><td>3.254</td><td>0.000</td><td>82%</td><td>0.000</td><td>7.40</td><td>0.00</td><td>+7.40</td><td style="color:#aaa;font-size:9pt">37</td></tr>
+<tr class="peak-bg"><td>14:00</td><td>Peak</td><td>1.410</td><td>2.666</td><td>0.000</td><td>90%</td><td>0.000</td><td>8.99</td><td>0.00</td><td>+8.99</td><td style="color:#aaa;font-size:9pt">41</td></tr>
+<tr class="peak-bg"><td>15:00</td><td>Peak</td><td>0.900</td><td>1.988</td><td>0.000</td><td>97%</td><td>0.000</td><td>5.74</td><td>0.00</td><td>+5.74</td><td style="color:#aaa;font-size:9pt">30</td></tr>
+<tr class="peak-bg"><td>16:00</td><td>Peak</td><td>0.900</td><td>1.167</td><td>0.000</td><td>98%</td><td>0.000</td><td>5.74</td><td>0.00</td><td>+5.74</td><td style="color:#aaa;font-size:9pt">30</td></tr>
+<tr class="peak-bg"><td>17:00</td><td>Peak</td><td>0.960</td><td>0.484</td><td>0.000</td><td>95%</td><td>0.000</td><td>6.12</td><td>0.00</td><td>+6.12</td><td style="color:#aaa;font-size:9pt">31</td></tr>
+<tr class="peak-bg"><td>18:00</td><td>Peak</td><td>0.960</td><td>0.056</td><td>0.000</td><td>90%</td><td>0.000</td><td>6.12</td><td>0.00</td><td>+6.12</td><td style="color:#aaa;font-size:9pt">33</td></tr>
+<tr class="peak-bg"><td>19:00</td><td>Peak</td><td>1.430</td><td>0.000</td><td>0.000</td><td>81%</td><td>0.000</td><td>9.12</td><td>0.00</td><td>+9.12</td><td style="color:#aaa;font-size:9pt">40</td></tr>
+<tr class="peak-bg"><td>20:00</td><td>Peak</td><td>2.880</td><td>0.000</td><td>0.000</td><td>63%</td><td>0.000</td><td>18.37</td><td>0.00</td><td>+18.37</td><td style="color:#aaa;font-size:9pt">56</td></tr>
+<tr class="peak-bg"><td>21:00</td><td>Peak</td><td>2.790</td><td>0.000</td><td>0.000</td><td>46%</td><td>0.000</td><td>17.79</td><td>0.00</td><td>+17.79</td><td style="color:#aaa;font-size:9pt">56</td></tr>
+<tr class="off-bg"><td>22:00</td><td>Off</td><td>2.450</td><td>0.000</td><td>0.000</td><td>30%</td><td>0.000</td><td>7.34</td><td>0.00</td><td>+7.34</td><td style="color:#aaa;font-size:9pt">56</td></tr>
+<tr class="off-bg"><td>23:00</td><td>Off</td><td>1.950</td><td>0.000</td><td>0.000</td><td>18%</td><td>0.000</td><td>5.84</td><td>0.00</td><td>+5.84</td><td style="color:#aaa;font-size:9pt">56</td></tr>
+<tr class="total"><td colspan="2">รวม</td><td>33.380</td><td>24.304</td><td>10.168</td><td>—</td><td>0.000</td><td>155.71</td><td>30.44</td><td>+125.27</td></tr>
+
+</table>
+<p class="note">* Solar sim: 10×645W LonGi Hi-Mo X10 = 6.45 kWp · Solis 6kW inverter · PR=0.67 (calibrated: neighbor 6kWp partly_cloudy=22.6 kWh) · PVGIS TMY GHI Bangkok 13.71°N · inverter clipping modeled</p>
+<p class="note">* Battery: LVtopsun LVTS-512314-G4 16.07 kWh · floor 10% · max 6 kW · self-consumption (discharge เมื่อ load > solar จน SOC 10%)</p>
+
+<script>
+const H = ["00:00", "01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"];
+Plotly.newPlot('c1',[{x:H,y:[1.69, 1.53, 1.37, 1.39, 1.33, 1.85, 1.38, 0.94, 1.02, 0.63, 0.63, 0.87, 0.96, 1.16, 1.41, 0.9, 0.9, 0.96, 0.96, 1.43, 2.88, 2.79, 2.45, 1.95],type:'bar',name:'ใช้ (kWh)',
+  marker:{color:["#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#e74c3c", "#3498db", "#3498db"]}}],
+  {title:'การใช้ไฟรายชั่วโมง (แดง=Peak 6.40฿  น้ำเงิน=Off 3.00฿)',
+    xaxis:{title:'เวลา'},yaxis:{title:'kWh'},margin:{t:40,b:40},plot_bgcolor:'#fff'});
+
+Plotly.newPlot('c2',[
+  {x:H,y:[1.69, 1.53, 1.37, 1.39, 1.33, 1.85, 1.38, 0.94, 1.02, 0.63, 0.63, 0.87, 0.96, 1.16, 1.41, 0.9, 0.9, 0.96, 0.96, 1.43, 2.88, 2.79, 2.45, 1.95],type:'bar',name:'ใช้จริง',marker:{color:'#bdc3c7'},opacity:0.6},
+  {x:H,y:[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.151, 0.938, 1.729, 2.437, 2.939, 3.232, 3.263, 3.254, 2.666, 1.988, 1.167, 0.484, 0.056, 0.0, 0.0, 0.0, 0.0, 0.0],type:'bar',name:'Solar ผลิต',marker:{color:'#f39c12'},opacity:0.8},
+  {x:H,y:[1.467, 1.53, 1.37, 1.39, 1.33, 1.85, 1.229, 0.002, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],type:'scatter',mode:'lines+markers',name:'Grid import',
+    line:{color:'#e74c3c',width:2}},
+  {x:H,y:[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],type:'bar',name:'Spill',marker:{color:'#2ecc71'},opacity:0.5}
+],{title:'Solar vs Consumption (with battery)',barmode:'overlay',
+  xaxis:{title:'เวลา'},yaxis:{title:'kWh'},margin:{t:40,b:40},plot_bgcolor:'#fff'});
+
+Plotly.newPlot('c3',[
+  {x:H,y:[10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 14.4, 25.7, 40.0, 54.7, 69.1, 82.1, 89.9, 96.7, 98.3, 95.4, 89.7, 80.8, 62.9, 45.6, 30.3, 18.2],type:'scatter',mode:'lines+markers',
+    name:'Battery SOC %',line:{color:'#9b59b6',width:2},fill:'tozeroy',
+    fillcolor:'rgba(155,89,182,0.12)'},
+  {x:H,y:Array(H.length).fill(10),type:'scatter',mode:'lines',name:'Floor 10%',
+    line:{color:'#e74c3c',width:1,dash:'dot'},showlegend:true}
+],{title:'Battery SOC % (เริ่มต้น 11%)',
+  xaxis:{title:'เวลา'},yaxis:{title:'%',range:[0,105]},
+  margin:{t:40,b:36},plot_bgcolor:'#fff'});
+
+Plotly.newPlot('c4',[
+  {x:H,y:[5.06, 4.58, 4.1, 4.16, 3.98, 5.54, 4.13, 2.82, 3.06, 4.02, 4.02, 5.55, 6.12, 7.4, 8.99, 5.74, 5.74, 6.12, 6.12, 9.12, 18.37, 17.79, 7.34, 5.84],type:'bar',name:'ไม่มี Solar',marker:{color:'#e74c3c'},opacity:0.8},
+  {x:H,y:[4.39, 4.58, 4.1, 4.16, 3.98, 5.54, 3.68, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],type:'bar',name:'with Solar+Battery',marker:{color:'#27ae60'},opacity:0.8}
+],{title:'ค่าไฟต่อชั่วโมง (บาท)',barmode:'group',
+  xaxis:{title:'เวลา'},yaxis:{title:'บาท'},margin:{t:40,b:40},plot_bgcolor:'#fff'});
+
+Plotly.newPlot('c5',[
+  {x:H,y:[1.69, 1.53, 1.37, 1.39, 1.33, 1.85, 1.38, 0.94, 1.02, 0.63, 0.63, 0.87, 0.96, 1.16, 1.41, 0.9, 0.9, 0.96, 0.96, 1.43, 2.88, 2.79, 2.45, 1.95],type:'bar',name:'ไม่มีแอร์',marker:{color:'#3498db'},opacity:0.6},
+  {x:H,y:[1.69, 1.53, 1.37, 1.39, 1.33, 1.85, 1.38, 1.61, 1.69, 1.3, 1.3, 1.54, 1.63, 1.83, 2.08, 1.57, 1.57, 0.96, 0.96, 1.43, 2.88, 2.79, 2.45, 1.95],type:'bar',name:'+แอร์ 670W',marker:{color:'#e67e22'},opacity:0.7},
+  {x:H,y:[1.467, 1.53, 1.37, 1.39, 1.33, 1.85, 1.229, 0.672, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.315, 2.45, 1.95],type:'scatter',mode:'lines+markers',name:'Grid (with AC)',
+    line:{color:'#c0392b',width:2}}
+],{title:'Use Case: +แอร์ 670W 07:00–17:00',barmode:'overlay',
+  xaxis:{title:'เวลา'},yaxis:{title:'kWh'},margin:{t:40,b:40},plot_bgcolor:'#fff'});
+</script>
+</body></html>
