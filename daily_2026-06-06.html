@@ -38,8 +38,8 @@
     <div class="lbl">On-Peak 09:00–22:00 · 0 ฿</div>
   </div>
   <div class="card c-off">
-    <div class="val">38.9 หน่วย</div>
-    <div class="lbl">Off-Peak · 116 ฿</div>
+    <div class="val">41.0 หน่วย</div>
+    <div class="lbl">Off-Peak · 123 ฿</div>
   </div>
   <div class="card c-sol">
     <div class="val">21.7 หน่วย</div>
@@ -47,7 +47,7 @@
   </div>
   <div class="card c-save">
     <div class="val">65 ฿</div>
-    <div class="lbl">ประหยัด/วัน (116 → 51 ฿)</div>
+    <div class="lbl">ประหยัด/วัน (123 → 58 ฿)</div>
   </div>
   <div class="card c-spill">
     <div class="val">0.00 หน่วย</div>
@@ -72,7 +72,7 @@
     <div class="lbl">ใช้ไฟเพิ่ม (670W × 10h)</div>
   </div>
   <div class="card c-save">
-    <div class="val">71 ฿</div>
+    <div class="val">78 ฿</div>
     <div class="lbl">ค่าไฟ with solar+battery+AC</div>
   </div>
   <div class="card c-off">
@@ -114,8 +114,8 @@
 <tr class="off-bg"><td>20:00</td><td>Off</td><td>2.130</td><td>0.000</td><td>1.063</td><td>10%</td><td>0.000</td><td>6.38</td><td>3.19</td><td>+3.19</td><td style="color:#aaa;font-size:9pt">48</td></tr>
 <tr class="off-bg"><td>21:00</td><td>Off</td><td>3.280</td><td>0.000</td><td>3.280</td><td>10%</td><td>0.000</td><td>9.83</td><td>9.83</td><td>0.00</td><td style="color:#aaa;font-size:9pt">56</td></tr>
 <tr class="off-bg"><td>22:00</td><td>Off</td><td>2.500</td><td>0.000</td><td>2.500</td><td>10%</td><td>0.000</td><td>7.49</td><td>7.49</td><td>0.00</td><td style="color:#aaa;font-size:9pt">56</td></tr>
-<tr class="off-bg"><td>23:00</td><td>Off</td><td>0.000</td><td>0.000</td><td>0.000</td><td>10%</td><td>-0.000</td><td>0.00</td><td>0.00</td><td>0.00</td><td style="color:#aaa;font-size:9pt">—</td></tr>
-<tr class="total"><td colspan="2">รวม</td><td>38.870</td><td>21.709</td><td>17.160</td><td>—</td><td>0.000</td><td>116.39</td><td>51.39</td><td>+65.00</td></tr>
+<tr class="off-bg"><td>23:00</td><td>Off</td><td>2.160</td><td>0.000</td><td>2.160</td><td>10%</td><td>0.000</td><td>6.47</td><td>6.47</td><td>0.00</td><td style="color:#aaa;font-size:9pt">56</td></tr>
+<tr class="total"><td colspan="2">รวม</td><td>41.030</td><td>21.709</td><td>19.320</td><td>—</td><td>0.000</td><td>122.86</td><td>57.86</td><td>+65.00</td></tr>
 
 </table>
 <p class="note">* Solar sim: 10×645W LonGi Hi-Mo X10 = 6.45 kWp · Solis 6kW inverter · PR=0.67 (calibrated: neighbor 6kWp partly_cloudy=22.6 kWh) · PVGIS TMY GHI Bangkok 13.71°N · inverter clipping modeled</p>
@@ -123,17 +123,17 @@
 
 <script>
 const H = ["00:00", "01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"];
-Plotly.newPlot('c1',[{x:H,y:[1.46, 1.47, 1.47, 1.38, 1.46, 1.43, 1.18, 1.44, 1.27, 1.4, 2.42, 2.81, 2.56, 1.59, 1.71, 1.03, 1.17, 1.33, 1.22, 1.16, 2.13, 3.28, 2.5, 0.0],type:'bar',name:'ใช้ (kWh)',
+Plotly.newPlot('c1',[{x:H,y:[1.46, 1.47, 1.47, 1.38, 1.46, 1.43, 1.18, 1.44, 1.27, 1.4, 2.42, 2.81, 2.56, 1.59, 1.71, 1.03, 1.17, 1.33, 1.22, 1.16, 2.13, 3.28, 2.5, 2.16],type:'bar',name:'ใช้ (kWh)',
   marker:{color:["#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db", "#3498db"]}}],
   {title:'การใช้ไฟรายชั่วโมง (แดง=Peak 6.40฿  น้ำเงิน=Off 3.00฿)',
     xaxis:{title:'เวลา'},yaxis:{title:'kWh'},margin:{t:40,b:40},plot_bgcolor:'#fff'});
 
 Plotly.newPlot('c2',[
-  {x:H,y:[1.46, 1.47, 1.47, 1.38, 1.46, 1.43, 1.18, 1.44, 1.27, 1.4, 2.42, 2.81, 2.56, 1.59, 1.71, 1.03, 1.17, 1.33, 1.22, 1.16, 2.13, 3.28, 2.5, 0.0],type:'bar',name:'ใช้จริง',marker:{color:'#bdc3c7'},opacity:0.6},
+  {x:H,y:[1.46, 1.47, 1.47, 1.38, 1.46, 1.43, 1.18, 1.44, 1.27, 1.4, 2.42, 2.81, 2.56, 1.59, 1.71, 1.03, 1.17, 1.33, 1.22, 1.16, 2.13, 3.28, 2.5, 2.16],type:'bar',name:'ใช้จริง',marker:{color:'#bdc3c7'},opacity:0.6},
   {x:H,y:[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.135, 0.838, 1.544, 2.177, 2.625, 2.887, 2.914, 2.907, 2.382, 1.776, 1.042, 0.432, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0],type:'bar',name:'Solar ผลิต',marker:{color:'#f39c12'},opacity:0.8},
-  {x:H,y:[1.46, 1.47, 1.47, 1.38, 1.46, 1.43, 1.045, 0.602, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.063, 3.28, 2.5, 0.0],type:'scatter',mode:'lines+markers',name:'Grid import',
+  {x:H,y:[1.46, 1.47, 1.47, 1.38, 1.46, 1.43, 1.045, 0.602, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.063, 3.28, 2.5, 2.16],type:'scatter',mode:'lines+markers',name:'Grid import',
     line:{color:'#e74c3c',width:2}},
-  {x:H,y:[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0],type:'bar',name:'Spill',marker:{color:'#2ecc71'},opacity:0.5}
+  {x:H,y:[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],type:'bar',name:'Spill',marker:{color:'#2ecc71'},opacity:0.5}
 ],{title:'Solar vs Consumption (with battery)',barmode:'overlay',
   xaxis:{title:'เวลา'},yaxis:{title:'kWh'},margin:{t:40,b:40},plot_bgcolor:'#fff'});
 
@@ -148,15 +148,15 @@ Plotly.newPlot('c3',[
   margin:{t:40,b:36},plot_bgcolor:'#fff'});
 
 Plotly.newPlot('c4',[
-  {x:H,y:[4.37, 4.4, 4.4, 4.13, 4.37, 4.28, 3.53, 4.31, 3.8, 4.19, 7.25, 8.42, 7.67, 4.76, 5.12, 3.09, 3.5, 3.98, 3.65, 3.47, 6.38, 9.83, 7.49, 0.0],type:'bar',name:'ไม่มี Solar',marker:{color:'#e74c3c'},opacity:0.8},
-  {x:H,y:[4.37, 4.4, 4.4, 4.13, 4.37, 4.28, 3.13, 1.8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.19, 9.83, 7.49, 0.0],type:'bar',name:'with Solar+Battery',marker:{color:'#27ae60'},opacity:0.8}
+  {x:H,y:[4.37, 4.4, 4.4, 4.13, 4.37, 4.28, 3.53, 4.31, 3.8, 4.19, 7.25, 8.42, 7.67, 4.76, 5.12, 3.09, 3.5, 3.98, 3.65, 3.47, 6.38, 9.83, 7.49, 6.47],type:'bar',name:'ไม่มี Solar',marker:{color:'#e74c3c'},opacity:0.8},
+  {x:H,y:[4.37, 4.4, 4.4, 4.13, 4.37, 4.28, 3.13, 1.8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 3.19, 9.83, 7.49, 6.47],type:'bar',name:'with Solar+Battery',marker:{color:'#27ae60'},opacity:0.8}
 ],{title:'ค่าไฟต่อชั่วโมง (บาท)',barmode:'group',
   xaxis:{title:'เวลา'},yaxis:{title:'บาท'},margin:{t:40,b:40},plot_bgcolor:'#fff'});
 
 Plotly.newPlot('c5',[
-  {x:H,y:[1.46, 1.47, 1.47, 1.38, 1.46, 1.43, 1.18, 1.44, 1.27, 1.4, 2.42, 2.81, 2.56, 1.59, 1.71, 1.03, 1.17, 1.33, 1.22, 1.16, 2.13, 3.28, 2.5, 0.0],type:'bar',name:'ไม่มีแอร์',marker:{color:'#3498db'},opacity:0.6},
-  {x:H,y:[1.46, 1.47, 1.47, 1.38, 1.46, 1.43, 1.18, 2.11, 1.94, 2.07, 3.09, 3.48, 3.23, 2.26, 2.38, 1.7, 1.84, 1.33, 1.22, 1.16, 2.13, 3.28, 2.5, 0.0],type:'bar',name:'+แอร์ 670W',marker:{color:'#e67e22'},opacity:0.7},
-  {x:H,y:[1.46, 1.47, 1.47, 1.38, 1.46, 1.43, 1.045, 1.272, 0.396, 0.0, 0.358, 0.593, 0.316, 0.0, 0.0, 0.0, 0.074, 0.898, 1.17, 1.16, 2.13, 3.28, 2.5, 0.0],type:'scatter',mode:'lines+markers',name:'Grid (with AC)',
+  {x:H,y:[1.46, 1.47, 1.47, 1.38, 1.46, 1.43, 1.18, 1.44, 1.27, 1.4, 2.42, 2.81, 2.56, 1.59, 1.71, 1.03, 1.17, 1.33, 1.22, 1.16, 2.13, 3.28, 2.5, 2.16],type:'bar',name:'ไม่มีแอร์',marker:{color:'#3498db'},opacity:0.6},
+  {x:H,y:[1.46, 1.47, 1.47, 1.38, 1.46, 1.43, 1.18, 2.11, 1.94, 2.07, 3.09, 3.48, 3.23, 2.26, 2.38, 1.7, 1.84, 1.33, 1.22, 1.16, 2.13, 3.28, 2.5, 2.16],type:'bar',name:'+แอร์ 670W',marker:{color:'#e67e22'},opacity:0.7},
+  {x:H,y:[1.46, 1.47, 1.47, 1.38, 1.46, 1.43, 1.045, 1.272, 0.396, 0.0, 0.358, 0.593, 0.316, 0.0, 0.0, 0.0, 0.074, 0.898, 1.17, 1.16, 2.13, 3.28, 2.5, 2.16],type:'scatter',mode:'lines+markers',name:'Grid (with AC)',
     line:{color:'#c0392b',width:2}}
 ],{title:'Use Case: +แอร์ 670W 07:00–17:00',barmode:'overlay',
   xaxis:{title:'เวลา'},yaxis:{title:'kWh'},margin:{t:40,b:40},plot_bgcolor:'#fff'});
