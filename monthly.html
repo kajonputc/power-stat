@@ -200,8 +200,10 @@ function renderMonthly(d) {
         <div class="lbl">EV ชาร์จรอบนี้ (${d.ev_sessions} ครั้ง · ${d.ev_hours.toFixed(1)}h)</div></div>
       <div class="card" style="border-left:4px solid #e67e22"><div class="val">${d.ev_cost.toFixed(0)} ฿</div>
         <div class="lbl">ค่าไฟ EV Phase B</div></div>
+      <div class="card" style="border-left:4px solid #c0392b"><div class="val">${(d.ab_cost_no||d.total_cost_no+d.ev_cost).toFixed(0)} ฿</div>
+        <div class="lbl">รวม A+B ถ้าไม่มี solar</div></div>
       <div class="card c1"><div class="val">${d.total_bill.toFixed(0)} ฿</div>
-        <div class="lbl">รวมจ่ายจริง (Phase A + EV) · ${d.total_days} วัน</div></div>
+        <div class="lbl">รวมจ่ายจริง A+B (w/solar) · ${d.total_days} วัน</div></div>
       <div class="card c3"><div class="val">${d.proj_bill.toFixed(0)} ฿</div>
         <div class="lbl">Projected รวม EV เต็มรอบ</div></div>
     </div>` : ''}
