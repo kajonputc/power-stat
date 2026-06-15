@@ -170,12 +170,24 @@ function renderMonthly(d) {
   const ps = new Date(d.period_start).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
   const pe = new Date(d.period_end).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
 
+  const grpStyle = 'margin:18px 0 4px;font-size:9.5pt;font-weight:bold;letter-spacing:0.08em;border-bottom:1px solid #ddd;padding-bottom:2px';
+  const evKwh    = d.ev_kwh  || 0;
+  const evCost   = d.ev_cost || 0;
+  const evSess   = d.ev_sessions || 0;
+  const evAvg    = evSess > 0 ? (evKwh / evSess).toFixed(1) : '0.0';
+  const abCostNo = d.ab_cost_no != null ? d.ab_cost_no : d.total_cost_no + evCost;
+  const abCostWith = d.total_bill != null ? d.total_bill : d.total_cost_with;
+  const abSaving = Math.round(abCostNo - abCostWith);
+  const abUnits  = Math.round(d.total_consumed + evKwh);
+
   document.getElementById('content').innerHTML=`
     <h1>Monthly Summary — รอบบิล ${ps} – ${pe}</h1>
     <p style="color:#666;font-size:10pt">ข้อมูล ${d.total_days}/${d.days_in_period} วัน · Solar 6.5kWp + Deye 5kW · PR=0.67 · RAPD 15.36kWh · MEA TOU ${d.rate_peak||'6.38'}/${d.rate_offpeak||'3.00'}฿</p>
+
+    <p style="${grpStyle};color:#555">PHASE A — บ้าน</p>
     <div class="grid4">
       <div class="card c1"><div class="val">${d.total_consumed.toFixed(0)} หน่วย</div>
-        <div class="lbl">รวมใช้ไฟ (${d.total_days} วัน)</div></div>
+        <div class="lbl">รวมใช้ไฟ Phase A (${d.total_days} วัน)</div></div>
       <div class="card c2"><div class="val">${d.total_cost_no.toFixed(0)} ฿</div>
         <div class="lbl">ค่าไฟถ้าไม่มี solar</div></div>
       <div class="card c3"><div class="val">${d.total_cost_with.toFixed(0)} ฿</div>
@@ -193,20 +205,34 @@ function renderMonthly(d) {
       <div class="card c3"><div class="val">${d.proj_cost_with} ฿</div>
         <div class="lbl">Projected Phase A (เทียบ ${d.proj_cost_no}฿ ไม่มี solar)</div></div>
     </div>
-    ${d.ev_sessions>0 ? `
-    <h2 style="margin-top:16px">รวมค่าไฟทั้งหมด (Phase A + EV Phase B)</h2>
+
+    <p style="${grpStyle};color:#8e44ad">PHASE B — EV Charging</p>
     <div class="grid4">
-      <div class="card" style="border-left:4px solid #e67e22"><div class="val">${d.ev_kwh.toFixed(1)} หน่วย</div>
-        <div class="lbl">EV ชาร์จรอบนี้ (${d.ev_sessions} ครั้ง · ${d.ev_hours.toFixed(1)}h)</div></div>
-      <div class="card" style="border-left:4px solid #e67e22"><div class="val">${d.ev_cost.toFixed(0)} ฿</div>
-        <div class="lbl">ค่าไฟ EV Phase B</div></div>
-      <div class="card" style="border-left:4px solid #c0392b"><div class="val">${(d.ab_cost_no||d.total_cost_no+d.ev_cost).toFixed(0)} ฿</div>
-        <div class="lbl">รวม A+B ถ้าไม่มี solar</div></div>
-      <div class="card c1"><div class="val">${d.total_bill.toFixed(0)} ฿</div>
-        <div class="lbl">รวมจ่ายจริง A+B (w/solar) · ${d.total_days} วัน</div></div>
-      <div class="card c3"><div class="val">${d.proj_bill.toFixed(0)} ฿</div>
-        <div class="lbl">Projected รวม EV เต็มรอบ</div></div>
-    </div>` : ''}
+      <div class="card" style="border-left:4px solid #8e44ad"><div class="val">${evKwh.toFixed(1)} หน่วย</div>
+        <div class="lbl">จำนวนหน่วยที่ใช้ Phase B</div></div>
+      <div class="card" style="border-left:4px solid #8e44ad"><div class="val">${evCost.toFixed(0)} ฿</div>
+        <div class="lbl">ค่าไฟ Phase B</div></div>
+      <div class="card" style="border-left:4px solid #8e44ad"><div class="val">${evSess} ครั้ง</div>
+        <div class="lbl">จำนวนครั้งที่ชาร์จ</div></div>
+      <div class="card" style="border-left:4px solid #8e44ad"><div class="val">${evAvg} หน่วย</div>
+        <div class="lbl">เฉลี่ยต่อครั้ง</div></div>
+    </div>
+
+    <p style="${grpStyle};color:#c0392b">PHASE A+B — รวม</p>
+    <div class="grid3">
+      <div class="card" style="border-left:4px solid #c0392b"><div class="val">${abCostNo.toFixed(0)} ฿</div>
+        <div class="lbl">ค่าไฟ A+B (ถ้าไม่มี solar)</div></div>
+      <div class="card" style="border-left:4px solid #c0392b"><div class="val">${abUnits} หน่วย</div>
+        <div class="lbl">จำนวนหน่วย A+B รวม</div></div>
+      <div class="card" style="border-left:4px solid #f39c12"><div class="val">${d.total_solar.toFixed(0)} หน่วย</div>
+        <div class="lbl">Solar ผลิตได้ (sim)</div></div>
+      <div class="card" style="border-left:4px solid #16a085"><div class="val">${abCostWith.toFixed(0)} ฿</div>
+        <div class="lbl">ค่าไฟ A+B หลังหัก Solar</div></div>
+      <div class="card" style="border-left:4px solid #27ae60"><div class="val">+${abSaving} ฿</div>
+        <div class="lbl">Solar ประหยัดได้</div></div>
+      <div class="card" style="border-left:4px solid #e74c3c"><div class="val">${d.total_peak.toFixed(0)} / ${d.total_offpeak.toFixed(0)}</div>
+        <div class="lbl">Solar ใช้ไฟ Peak / Off-Peak (หน่วย)</div></div>
+    </div>
     <h2>Projection Breakdown</h2>
     <table style="width:auto;font-size:10pt">
       <tr style="background:#f5f5f5"><th style="text-align:left">ประเภทวัน</th>
