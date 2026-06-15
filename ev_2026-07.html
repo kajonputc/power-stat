@@ -28,20 +28,20 @@
 
 <div class="grid4">
   <div class="card c1">
-    <div class="val">1 ครั้ง</div>
+    <div class="val">2 ครั้ง</div>
     <div class="lbl">จำนวนครั้งที่ชาร์จในรอบนี้</div>
   </div>
   <div class="card c2">
-    <div class="val">0.8 หน่วย</div>
-    <div class="lbl">รวม kWh · ใช้เวลา 0.1h</div>
+    <div class="val">57.4 หน่วย</div>
+    <div class="lbl">รวม kWh · ใช้เวลา 8.0h</div>
   </div>
   <div class="card c3">
-    <div class="val">2 ฿</div>
+    <div class="val">172 ฿</div>
     <div class="lbl">ค่าไฟ EV รอบนี้ทั้งหมด</div>
   </div>
   <div class="card c4">
-    <div class="val">0.8 หน่วย</div>
-    <div class="lbl">เฉลี่ยต่อครั้ง · 2 ฿/ครั้ง</div>
+    <div class="val">28.7 หน่วย</div>
+    <div class="lbl">เฉลี่ยต่อครั้ง · 86 ฿/ครั้ง</div>
   </div>
 </div>
 
@@ -53,27 +53,28 @@
 <tr><th>#</th><th>วันที่</th><th>เริ่ม</th><th>สิ้นสุด</th>
     <th>ระยะเวลา</th><th>กำลัง avg</th><th>kWh</th><th>บาท</th></tr>
 <tr><td>1</td><td>2026-06-14</td><td>18:59</td><td>19:06</td><td>6 min (0.1h)</td><td>7.14 kW</td><td><strong>0.77</strong></td><td><strong>2.30</strong></td></tr>
-<tr class="total"><td colspan="6">รวม</td><td>0.77</td><td>2.30</td></tr>
+<tr><td>2</td><td>2026-06-14</td><td>22:15</td><td>06:10</td><td>475 min (7.9h)</td><td>7.16 kW</td><td><strong>56.67</strong></td><td><strong>169.74</strong></td></tr>
+<tr class="total"><td colspan="6">รวม</td><td>57.44</td><td>172.04</td></tr>
 </table>
-<p style="color:#888;font-size:9pt">* Cross-check: energy_b sensor แสดง 0.81 kWh ในช่วงนี้</p>
+<p style="color:#888;font-size:9pt">* Cross-check: energy_b sensor แสดง 57.46 kWh ในช่วงนี้</p>
 
 <h2>พฤติกรรมการชาร์จ (กำลังเฉลี่ย)</h2>
 <div class="chart" id="chart_power" style="height:260px"></div>
 
 <script>
 Plotly.newPlot('chart_daily',[{
-  x:["2026-06-14"], y:[0.77],
+  x:["2026-06-14"], y:[57.44],
   type:'bar', name:'kWh/วัน', marker:{color:'#8e44ad'},
-  text:["0.77"], textposition:'outside'
+  text:["57.44"], textposition:'outside'
 }],{
   title:'kWh ชาร์จ EV แต่ละวัน',
   xaxis:{title:'วันที่'}, yaxis:{title:'kWh'},
   margin:{t:40,b:60}, plot_bgcolor:'#fff'
 });
 
-const sess_labels = ["#1 06/14 18:59"];
-const sess_kwh    = [0.77];
-const sess_kw     = [7.14];
+const sess_labels = ["#1 06/14 18:59", "#2 06/14 22:15"];
+const sess_kwh    = [0.77, 56.67];
+const sess_kw     = [7.14, 7.16];
 Plotly.newPlot('chart_power',[
   {x:sess_labels, y:sess_kw, type:'bar', name:'กำลัง avg (kW)',
     marker:{color:'#2980b9'}, yaxis:'y2'},
