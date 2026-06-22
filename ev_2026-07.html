@@ -28,7 +28,7 @@
 
 <div class="grid4">
   <div class="card c1">
-    <div class="val">4 ครั้ง</div>
+    <div class="val">6 ครั้ง</div>
     <div class="lbl">จำนวนครั้งที่ชาร์จในรอบนี้</div>
   </div>
   <div class="card c2">
@@ -36,12 +36,12 @@
     <div class="lbl">รวม kWh · ใช้เวลา 19.9h</div>
   </div>
   <div class="card c3">
-    <div class="val">427 ฿</div>
+    <div class="val">428 ฿</div>
     <div class="lbl">ค่าไฟ EV รอบนี้ทั้งหมด</div>
   </div>
   <div class="card c4">
-    <div class="val">35.7 หน่วย</div>
-    <div class="lbl">เฉลี่ยต่อครั้ง · 107 ฿/ครั้ง</div>
+    <div class="val">23.8 หน่วย</div>
+    <div class="lbl">เฉลี่ยต่อครั้ง · 71 ฿/ครั้ง</div>
   </div>
 </div>
 
@@ -56,27 +56,29 @@
 <tr><td>2</td><td>2026-06-14</td><td>22:15</td><td>06:10</td><td>475 min (7.9h)</td><td>7.16 kW</td><td><strong>56.67</strong></td><td><strong>169.74</strong></td></tr>
 <tr><td>3</td><td>2026-06-17</td><td>22:15</td><td>02:52</td><td>278 min (4.6h)</td><td>7.17 kW</td><td><strong>33.19</strong></td><td><strong>99.41</strong></td></tr>
 <tr><td>4</td><td>2026-06-20</td><td>22:13</td><td>05:30</td><td>437 min (7.3h)</td><td>7.15 kW</td><td><strong>52.09</strong></td><td><strong>156.03</strong></td></tr>
-<tr class="total"><td colspan="6">รวม</td><td>142.72</td><td>427.48</td></tr>
+<tr><td>5</td><td>2026-06-22</td><td>18:58</td><td>18:58</td><td>0 min (0.0h)</td><td>7.15 kW</td><td><strong>0.00</strong></td><td><strong>0.00</strong></td></tr>
+<tr><td>6</td><td>2026-06-22</td><td>20:04</td><td>20:05</td><td>0 min (0.0h)</td><td>7.15 kW</td><td><strong>0.02</strong></td><td><strong>0.06</strong></td></tr>
+<tr class="total"><td colspan="6">รวม</td><td>142.74</td><td>427.54</td></tr>
 </table>
-<p style="color:#888;font-size:9pt">* Cross-check: energy_b sensor แสดง 142.87 kWh ในช่วงนี้</p>
+<p style="color:#888;font-size:9pt">* Cross-check: energy_b sensor แสดง 142.99 kWh ในช่วงนี้</p>
 
 <h2>พฤติกรรมการชาร์จ (กำลังเฉลี่ย)</h2>
 <div class="chart" id="chart_power" style="height:260px"></div>
 
 <script>
 Plotly.newPlot('chart_daily',[{
-  x:["2026-06-14", "2026-06-17", "2026-06-20"], y:[57.44, 33.19, 52.09],
+  x:["2026-06-14", "2026-06-17", "2026-06-20", "2026-06-22"], y:[57.44, 33.19, 52.09, 0.02],
   type:'bar', name:'kWh/วัน', marker:{color:'#8e44ad'},
-  text:["57.44", "33.19", "52.09"], textposition:'outside'
+  text:["57.44", "33.19", "52.09", "0.02"], textposition:'outside'
 }],{
   title:'kWh ชาร์จ EV แต่ละวัน',
   xaxis:{title:'วันที่'}, yaxis:{title:'kWh'},
   margin:{t:40,b:60}, plot_bgcolor:'#fff'
 });
 
-const sess_labels = ["#1 06/14 18:59", "#2 06/14 22:15", "#3 06/17 22:15", "#4 06/20 22:13"];
-const sess_kwh    = [0.77, 56.67, 33.19, 52.09];
-const sess_kw     = [7.14, 7.16, 7.17, 7.15];
+const sess_labels = ["#1 06/14 18:59", "#2 06/14 22:15", "#3 06/17 22:15", "#4 06/20 22:13", "#5 06/22 18:58", "#6 06/22 20:04"];
+const sess_kwh    = [0.77, 56.67, 33.19, 52.09, 0.0, 0.02];
+const sess_kw     = [7.14, 7.16, 7.17, 7.15, 7.15, 7.15];
 Plotly.newPlot('chart_power',[
   {x:sess_labels, y:sess_kw, type:'bar', name:'กำลัง avg (kW)',
     marker:{color:'#2980b9'}, yaxis:'y2'},
