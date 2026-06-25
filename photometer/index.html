@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Remote Houses — Power Usage</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script src="data.js"></script>
+<style>
+  body { background:#0d0f12; color:#ddd; font-family:sans-serif; margin:0; padding:12px; }
+  h1 { font-size:1.1em; margin-bottom:4px; }
+  h2 { font-size:0.95em; margin:18px 0 4px; color:#aaa; }
+  p { font-size:0.85em; color:#999; margin:6px 0; }
+  .tabs { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0; }
+  .tabs button {
+    flex:1; min-width:70px; background:#222; color:#ddd; border:1px solid #444;
+    border-radius:8px; padding:10px 6px; font-size:0.95em;
+  }
+  .tabs button.active { background:#3ecb6a; color:#0d0f12; border-color:#3ecb6a; font-weight:bold; }
+  #hourly, #solarsim, #battery { width:100%; margin-top:6px; }
+  .summary { display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.85em; margin-top:10px; }
+  .summary div { background:#1a1c20; border-radius:8px; padding:8px; }
+  .summary b { color:#3ecb6a; font-size:1.1em; display:block; }
+</style>
+</head>
+<body>
+<h1>Remote Houses — Power Usage</h1>
+<p>ข้อมูลจากการถ่ายภาพหน้าจอ Smart Life ไม่ real-time</p>
+
+<div class="tabs" id="meterTabs"></div>
+
+<p>เลือกวันที่:</p>
+<div class="tabs" id="dateTabs"></div>
+
+<h2>การใช้ไฟจริง รายชั่วโมง (จาก Smart Life)</h2>
+<div id="hourly"></div>
+
+<h2>What-if: ติด Solar 10kWp</h2>
+<p>
+  สมมติ: panel 10 kWp, inverter 10 kW (ไม่ clip), PR 0.67 (ค่าเดียวกับบ้านหลัก) —
+  ปรับ <code>SOLAR_KWP</code> / <code>INVERTER_KW</code> ใน script ถ้าระบบจริงไม่ใช่ขนาดนี้
+</p>
+<div id="solarsim"></div>
+
+<h2>What-if: ใส่ Battery ด้วย (16.07 kWh, floor 10%, max 6kW — spec เดียวกับบ้านหลัก)</h2>
+<div id="battery"></div>
+<div class="summary" id="summary"></div>
+
+<script>
+// ---- solar + battery model, ported from power_stat/daily_report.py (same constants) ----
+const SOLAR_KWP   = 10;
+const INVERTER_KW = 10;
+const PR          = 0.67;
+const PVGIS_MAY_GHI = {6:35,7:217,8:400,9:564,10:680,11:748,12:755,13:753,14:617,15:460,16:270,17:112,18:13};
+const PVGIS_MONTHLY_GHI = {1:4.69,2:5.95,3:5.94,4:6.31,5:5.62,6:5.02,7:4.71,8:4.56,9:4.15,10:4.45,11:4.02,12:4.35};
+const BAT_CAPACITY = 16.07;
+const BAT_FLOOR    = 0.10;
+const BAT_MAX_KW   = 6.0;
+
+function solarKwhInHour(hour, month) {
+  const ghi0 = PVGIS_MAY_GHI[hour] || 0;
+  if (ghi0 === 0) return 0;
+  const scale = PVGIS_MONTHLY_GHI[month] / PVGIS_MONTHLY_GHI[5];
+  const ghi = ghi0 * scale;
+  return Math.min(ghi / 1000 * SOLAR_KWP * PR, INVERTER_KW);
+}
+
+function simulateDay(hourlyKwh, month, batStartKwh) {
+  const batUsable = BAT_CAPACITY * (1 - BAT_FLOOR);
+  let batKwh = batStartKwh || 0;
+  const rows = [];
+  for (let h = 0; h < 24; h++) {
+    const consumed = hourlyKwh[h] || 0;
+    const solar = solarKwhInHour(h, month);
+    const net = consumed - solar;
+    let charge = 0, discharge = 0, spill = 0, grid = 0;
+    if (net <= 0) {
+      const surplus = -net;
+      const canCharge = Math.max(0, Math.min(batUsable - batKwh, BAT_MAX_KW));
+      charge = Math.max(0, Math.min(surplus, canCharge));
+      batKwh += charge;
+      spill = surplus - charge;
+    } else {
+      if (batKwh > 0) {
+        discharge = Math.min(net, batKwh, BAT_MAX_KW);
+        batKwh -= discharge;
+        grid = net - discharge;
+      } else {
+        grid = net;
+      }
+    }
+    rows.push({
+      hour: h, consumed, solar, charge, discharge, spill,
+      grid: Math.max(0, grid),
+      bat_kwh: batKwh,
+      soc_pct: (BAT_FLOOR + batKwh / BAT_CAPACITY) * 100
+    });
+  }
+  return rows;
+}
+
+// battery state carries over: a day starts where the previous day's battery ended
+function simulateMeter(meter) {
+  const list = [...READINGS[meter]].sort((a, b) => a.date.localeCompare(b.date));
+  let batKwh = 0;
+  const byDate = {};
+  list.forEach(r => {
+    const month = parseInt(r.date.split('-')[1], 10);
+    const sim = simulateDay(r.hourly_kwh, month, batKwh);
+    byDate[r.date] = sim;
+    batKwh = sim[sim.length - 1].bat_kwh;
+  });
+  return byDate;
+}
+
+// ---- UI ----
+const meterTabs = document.getElementById('meterTabs');
+const dateTabs = document.getElementById('dateTabs');
+
+function makeTabs(container, items, active, onPick) {
+  container.innerHTML = '';
+  items.forEach(item => {
+    const btn = document.createElement('button');
+    btn.textContent = item;
+    if (item === active) btn.classList.add('active');
+    btn.addEventListener('click', () => onPick(item));
+    container.appendChild(btn);
+  });
+}
+
+function selectMeter(meter) {
+  makeTabs(meterTabs, Object.keys(READINGS), meter, selectMeter);
+  const list = READINGS[meter];
+  const lastDate = list[list.length - 1].date;
+  makeTabs(dateTabs, list.map(r => r.date), lastDate, d => render(meter, d));
+  render(meter, lastDate);
+}
+
+function render(meter, date) {
+  makeTabs(dateTabs, READINGS[meter].map(r => r.date), date, d => render(meter, d));
+
+  const r = READINGS[meter].find(r => r.date === date);
+  const hours = r.hourly_kwh.map((_, h) => h);
+  const sim = simulateMeter(meter)[date];
+
+  const layoutBase = {
+    paper_bgcolor: '#0d0f12', plot_bgcolor: '#0d0f12', font: { color: '#ddd' },
+    margin: { l: 40, r: 10, t: 36, b: 30 },
+    xaxis: { title: 'hour', gridcolor: '#333', dtick: 1 },
+    yaxis: { gridcolor: '#333' }
+  };
+
+  Plotly.newPlot('hourly', [{
+    x: hours, y: r.hourly_kwh, type: 'bar', marker: { color: '#3ecb6a' }
+  }], { ...layoutBase, title: `${meter} — การใช้ไฟจริง (kWh) — ${date}` },
+  { responsive: true, displayModeBar: false });
+
+  Plotly.newPlot('solarsim', [
+    { x: hours, y: sim.map(s => s.consumed), type: 'bar', name: 'ใช้ไฟ', marker: { color: '#3ecb6a' } },
+    { x: hours, y: sim.map(s => s.solar), type: 'bar', name: 'Solar ผลิต', marker: { color: '#f39c12' }, opacity: 0.8 }
+  ], { ...layoutBase, title: `${meter} — ใช้ไฟ vs Solar 10kWp — ${date}`, barmode: 'overlay' },
+  { responsive: true, displayModeBar: false });
+
+  Plotly.newPlot('battery', [
+    { x: hours, y: sim.map(s => s.soc_pct), type: 'scatter', mode: 'lines+markers', name: 'Battery SOC %', line: { color: '#3ecb6a' } }
+  ], { ...layoutBase, title: `${meter} — Battery SOC % — ${date}`, yaxis: { gridcolor: '#333', range: [0, 100] } },
+  { responsive: true, displayModeBar: false });
+
+  const totalConsumed = sim.reduce((a, s) => a + s.consumed, 0);
+  const totalSolar = sim.reduce((a, s) => a + s.solar, 0);
+  const totalSpill = sim.reduce((a, s) => a + s.spill, 0);
+  const totalGrid = sim.reduce((a, s) => a + s.grid, 0);
+  const selfUsed = totalSolar - totalSpill;
+  const endSoc = sim[sim.length - 1].soc_pct;
+
+  document.getElementById('summary').innerHTML = `
+    <div>ใช้ไฟทั้งวัน<b>${totalConsumed.toFixed(1)} kWh</b></div>
+    <div>Solar ผลิตได้<b>${totalSolar.toFixed(1)} kWh</b></div>
+    <div>Solar ใช้เอง<b>${selfUsed.toFixed(1)} kWh</b></div>
+    <div>เหลือ/ส่งออก (spill)<b>${totalSpill.toFixed(1)} kWh</b></div>
+    <div>ยังต้องดึงจาก grid<b>${totalGrid.toFixed(1)} kWh</b></div>
+    <div>Battery SOC สิ้นวัน<b>${endSoc.toFixed(0)}%</b></div>
+  `;
+}
+
+selectMeter(Object.keys(READINGS)[0]);
+</script>
+</body>
+</html>
