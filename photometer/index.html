@@ -130,14 +130,14 @@ function makeTabs(container, items, active, onPick) {
 
 function selectMeter(meter) {
   makeTabs(meterTabs, Object.keys(READINGS), meter, selectMeter);
-  const list = READINGS[meter];
+  const list = [...READINGS[meter]].sort((a, b) => a.date.localeCompare(b.date));
   const lastDate = list[list.length - 1].date;
   makeTabs(dateTabs, list.map(r => r.date), lastDate, d => render(meter, d));
   render(meter, lastDate);
 }
 
 function render(meter, date) {
-  makeTabs(dateTabs, READINGS[meter].map(r => r.date), date, d => render(meter, d));
+  makeTabs(dateTabs, [...READINGS[meter]].sort((a,b) => a.date.localeCompare(b.date)).map(r => r.date), date, d => render(meter, d));
 
   const r = READINGS[meter].find(r => r.date === date);
   const hours = r.hourly_kwh.map((_, h) => h);
