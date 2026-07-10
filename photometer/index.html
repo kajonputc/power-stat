@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Remote Houses — Power Usage</title>
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="data.js"></script>
 <style>
   body { background:#0d0f12; color:#ddd; font-family:sans-serif; margin:0; padding:12px; }
@@ -17,6 +19,7 @@
     border-radius:8px; padding:10px 6px; font-size:0.95em;
   }
   .tabs button.active { background:#3ecb6a; color:#0d0f12; border-color:#3ecb6a; font-weight:bold; }
+  .flatpickr-calendar { margin:10px 0; }
   #hourly, #solarsim, #battery { width:100%; margin-top:6px; }
   .summary { display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.85em; margin-top:10px; }
   .summary div { background:#1a1c20; border-radius:8px; padding:8px; }
@@ -30,7 +33,7 @@
 <div class="tabs" id="meterTabs"></div>
 
 <p>เลือกวันที่:</p>
-<div class="tabs" id="dateTabs"></div>
+<input id="datePicker" style="display:none">
 
 <h2>การใช้ไฟจริง รายชั่วโมง (จาก Smart Life)</h2>
 <div id="hourly"></div>
@@ -115,7 +118,7 @@ function simulateMeter(meter) {
 
 // ---- UI ----
 const meterTabs = document.getElementById('meterTabs');
-const dateTabs = document.getElementById('dateTabs');
+let datePicker = null;
 
 function makeTabs(container, items, active, onPick) {
   container.innerHTML = '';
@@ -132,13 +135,20 @@ function selectMeter(meter) {
   makeTabs(meterTabs, Object.keys(READINGS), meter, selectMeter);
   const list = [...READINGS[meter]].sort((a, b) => a.date.localeCompare(b.date));
   const lastDate = list[list.length - 1].date;
-  makeTabs(dateTabs, list.map(r => r.date), lastDate, d => render(meter, d));
+
+  if (datePicker) datePicker.destroy();
+  datePicker = flatpickr('#datePicker', {
+    inline: true,
+    dateFormat: 'Y-m-d',
+    defaultDate: lastDate,
+    enable: list.map(r => r.date),
+    onChange: (dates, dateStr) => render(meter, dateStr)
+  });
+
   render(meter, lastDate);
 }
 
 function render(meter, date) {
-  makeTabs(dateTabs, [...READINGS[meter]].sort((a,b) => a.date.localeCompare(b.date)).map(r => r.date), date, d => render(meter, d));
-
   const r = READINGS[meter].find(r => r.date === date);
   const hours = r.hourly_kwh.map((_, h) => h);
   const sim = simulateMeter(meter)[date];
