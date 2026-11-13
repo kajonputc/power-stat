@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Monthly Summary</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:'Sarabun','TH Sarabun New',sans-serif;font-size:11pt;background:#f0f2f5;margin:0;padding:0}
+  #main{padding:18px 20px}
+  h1{font-size:15pt;border-bottom:2px solid #333;padding-bottom:6px;margin-top:0}
+  h2{font-size:12pt;border-bottom:1px solid #aaa;padding-bottom:3px;margin-top:24px;color:#444}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:12px 0}
+  .card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:12px 16px}
+  .card .val{font-size:18pt;font-weight:bold;color:#2c3e50}
+  .card .lbl{font-size:9pt;color:#888;margin-top:3px}
+  .c1{border-left:4px solid #e74c3c}.c2{border-left:4px solid #3498db}
+  .c3{border-left:4px solid #27ae60}.c4{border-left:4px solid #f39c12}
+  table{border-collapse:collapse;width:100%;font-size:10pt;margin:8px 0}
+  th,td{border:1px solid #ddd;padding:4px 8px;text-align:right}
+  th{background:#f5f5f5;text-align:center}
+  .row-weekday td:first-child{border-left:3px solid #e74c3c}
+  .row-weekend td:first-child{border-left:3px solid #3498db}
+  .note{font-size:9pt;color:#999;margin:4px 0}
+  .nav-bar{background:#2c3e50;color:#fff;padding:10px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .nav-bar a{color:#bdc3c7;text-decoration:none;font-size:10pt}
+  .nav-bar a.active,.nav-bar a:hover{color:#f39c12}
+  .nav-logo{color:#f39c12!important;font-weight:bold;font-size:13pt!important}
+</style>
+</head>
+<body>
+<div class="nav-bar">
+  <a href="index.html" class="nav-logo">⚡ Power Stats</a>
+  <select onchange="location='monthly_'+this.value+'.html'"><option value='2026-12' selected>2026-12</option><option value='2026-11'>2026-11</option><option value='2026-10'>2026-10</option><option value='2026-09'>2026-09</option><option value='2026-08'>2026-08</option><option value='2026-07'>2026-07</option><option value='2026-06'>2026-06</option><option value='2026-05'>2026-05</option></select>
+  <a href="index.html">🏠 หน้าหลัก</a>
+  <a href="monthly.html" class="active">📋 Monthly</a>
+  <a href="daily.html">📅 Daily</a>
+  <a href="ev.html">🔌 EV</a>
+</div>
+<script>
+  // monthly.html?month=X (links from index/daily) -> per-month page
+  var q = new URLSearchParams(location.search).get('month');
+  if (q && q !== '2026-12' && /^[0-9]{4}-[0-9]{2}$/.test(q)) location.replace('monthly_' + q + '.html');
+</script>
+<div id="main">
+  <h1>Monthly Summary — 2026-11-14 ถึง 2026-11-14 (billing period)</h1>
+  <div class="note">ข้อมูลจริงจาก Solis inverter (circuit A: house load เท่านั้น — EV circuit B ไม่มีมิเตอร์) • sum แบบ hourly จาก HA long-term statistics (เก็บถาวร ไม่ถูก purge)</div>
+  <div class="grid4">
+    <div class="card c1"><div class="val">0.0 kWh</div><div class="lbl">Load รวม</div></div>
+    <div class="card c3"><div class="val">0.0 kWh</div><div class="lbl">Solar+Batt คุ้มครอง</div></div>
+    <div class="card c2"><div class="val">0.0 kWh</div><div class="lbl">Grid Import</div></div>
+    <div class="card c4"><div class="val">0.00 ฿</div><div class="lbl">ประหยัดรวม</div></div>
+  </div>
+  <div class="note">Solar+Batt = Load − Grid (วัดตรงทั้งคู่ แม่นยำ) • PV/Battery net เป็นข้อมูลแจกแจงเพิ่มเติม จาก PV รวม 0.0 kWh — Battery net: +discharge / −charge</div>
+  <h2>รายชั่วโมง (0 ชม.) — ล่าสุดก่อน</h2>
+  <table>
+    <tr><th style="text-align:left">วันที่ ชม.</th><th>Load kWh</th><th>Solar+Batt kWh</th><th>PV kWh</th><th>Battery net kWh</th><th>Grid kWh</th><th>Rate</th><th>ประหยัด ฿</th></tr>
+    
+  </table>
+</div>
+</body>
+</html>
